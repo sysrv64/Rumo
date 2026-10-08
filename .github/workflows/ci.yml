@@ -42,6 +42,17 @@ jobs:
           # breaks this job, and this is where to look when it does.
           submodules: recursive
 
+      - name: Install the ALSA headers the audio crate binds against
+        # `cpal` pulls `alsa-sys` on a Linux host, and `alsa-sys` finds libasound
+        # through pkg-config. A bare runner has neither, so the build script dies
+        # with "Package alsa was not found in the pkg-config search path", which
+        # reads like a broken crate rather than like a missing package. This is a
+        # host-only need: the Android build links AAudio through the NDK and never
+        # touches ALSA, and `cargo ndk` below needs none of it.
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libasound2-dev
+
       - name: Install the pinned Rust toolchain
         run: |
           # The channel is read out of rust-toolchain.toml rather than repeated, so
@@ -88,8 +99,10 @@ jobs:
         uses: gradle/actions/setup-gradle@v6
         with:
           # Submitting the dependency graph needs `contents: write`, and this
-          # workflow holds `contents: read` deliberately.
-          dependency-graph: false
+          # workflow holds `contents: read` deliberately. `disabled` is also v6's
+          # default; it is spelled out because the value used to be a boolean, and
+          # a bare `false` is rejected here with a TypeError rather than ignored.
+          dependency-graph: disabled
 
       - name: Set up the Android SDK and NDK
         run: |
