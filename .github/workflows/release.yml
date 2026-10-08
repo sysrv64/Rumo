@@ -32,6 +32,20 @@ jobs:
     name: Signed release
     runs-on: ubuntu-latest
     steps:
+      - name: Check that the private submodule can be read
+        # `GITHUB_TOKEN` is scoped to this repository and cannot read another
+        # private one, even in the same organisation. Without the secret the
+        # checkout below fails with "Repository not found", which reads like the
+        # submodule does not exist rather than like a missing credential — and
+        # that costs whoever hits it an afternoon.
+        env:
+          SUBMODULE_TOKEN: ${{ secrets.SUBMODULE_TOKEN }}
+        run: |
+          if [ -z "$SUBMODULE_TOKEN" ]; then
+            echo "::error::SUBMODULE_TOKEN is not set. Create a fine-grained token with Contents: read on sysrv64/AI-Engines and add it as a repository secret named SUBMODULE_TOKEN. The submodule is private, so this workflow's own token cannot fetch it."
+            exit 1
+          fi
+
       - name: Check out, with the ai-engines submodule
         uses: actions/checkout@v7
         with:
