@@ -94,6 +94,18 @@ android {
         // literals, because neither variable is set for it.
         versionCode = System.getenv("RUMO_VERSION_CODE")?.toIntOrNull()?.takeIf { it > 0 } ?: 1
         versionName = System.getenv("RUMO_VERSION_NAME")?.removePrefix("v")?.takeIf { it.isNotBlank() } ?: "0.1"
+        // The engine is built for arm64-v8a and shipped as this app's own library, so
+        // arm64-v8a is the only ABI the app can honestly claim. Left alone, AGP
+        // packages every ABI the dependencies carry — `libandroidx.graphics.path.so`
+        // arrives in four — and the APK then declares support it cannot deliver: an
+        // x86_64 device installs it and crashes when `librumo_bridge.so` turns out not
+        // to be there. This lives in `defaultConfig`, not in one build type, because
+        // the release APK is the one that reaches a store and the debug APK is the one
+        // that reaches the author's phone by hand — and it was the release one that
+        // was missing it.
+        ndk {
+            abiFilters += "arm64-v8a"
+        }
     }
 
     signingConfigs {
@@ -122,9 +134,6 @@ android {
         }
         debug {
             isMinifyEnabled = false
-            ndk {
-                abiFilters += "arm64-v8a"
-            }
         }
     }
     packaging {
