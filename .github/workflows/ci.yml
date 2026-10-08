@@ -32,29 +32,15 @@ jobs:
     name: Rust tests
     runs-on: ubuntu-latest
     steps:
-      - name: Check that the private submodule can be read
-        # `GITHUB_TOKEN` is scoped to this repository and cannot read another
-        # private one, even in the same organisation. Without the secret the
-        # checkout below fails with "Repository not found", which reads like the
-        # submodule does not exist rather than like a missing credential — and
-        # that costs whoever hits it an afternoon.
-        env:
-          SUBMODULE_TOKEN: ${{ secrets.SUBMODULE_TOKEN }}
-        run: |
-          if [ -z "$SUBMODULE_TOKEN" ]; then
-            echo "::error::SUBMODULE_TOKEN is not set. Create a fine-grained token with Contents: read on sysrv64/AI-Engines and add it as a repository secret named SUBMODULE_TOKEN. The submodule is private, so this workflow's own token cannot fetch it."
-            exit 1
-          fi
-
       - name: Check out, with the ai-engines submodule
         uses: actions/checkout@v7
         with:
           # `:app` depends on `:ai-engines`, which lives in the submodule; without
-          # it Gradle cannot configure the build at all.
+          # it Gradle cannot configure the build at all. Both repositories are
+          # public, so the default token reads the submodule like any other public
+          # clone and no secret is involved. Making AI-Engines private again
+          # breaks this job, and this is where to look when it does.
           submodules: recursive
-          # Only needed if AI-Engines is private: this workflow's own token cannot
-          # read another private repository. Left unset, the default is used.
-          token: ${{ secrets.SUBMODULE_TOKEN || github.token }}
 
       - name: Install the pinned Rust toolchain
         run: |
@@ -83,25 +69,12 @@ jobs:
     name: Android debug APK
     runs-on: ubuntu-latest
     steps:
-      - name: Check that the private submodule can be read
-        # `GITHUB_TOKEN` is scoped to this repository and cannot read another
-        # private one, even in the same organisation. Without the secret the
-        # checkout below fails with "Repository not found", which reads like the
-        # submodule does not exist rather than like a missing credential — and
-        # that costs whoever hits it an afternoon.
-        env:
-          SUBMODULE_TOKEN: ${{ secrets.SUBMODULE_TOKEN }}
-        run: |
-          if [ -z "$SUBMODULE_TOKEN" ]; then
-            echo "::error::SUBMODULE_TOKEN is not set. Create a fine-grained token with Contents: read on sysrv64/AI-Engines and add it as a repository secret named SUBMODULE_TOKEN. The submodule is private, so this workflow's own token cannot fetch it."
-            exit 1
-          fi
-
       - name: Check out, with the ai-engines submodule
         uses: actions/checkout@v7
         with:
+          # Both repositories are public: the default token reads the submodule
+          # like any other public clone, and no secret is involved.
           submodules: recursive
-          token: ${{ secrets.SUBMODULE_TOKEN || github.token }}
 
       - name: Set up JDK 21
         uses: actions/setup-java@v6

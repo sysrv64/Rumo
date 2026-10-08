@@ -32,29 +32,14 @@ jobs:
     name: Signed release
     runs-on: ubuntu-latest
     steps:
-      - name: Check that the private submodule can be read
-        # `GITHUB_TOKEN` is scoped to this repository and cannot read another
-        # private one, even in the same organisation. Without the secret the
-        # checkout below fails with "Repository not found", which reads like the
-        # submodule does not exist rather than like a missing credential — and
-        # that costs whoever hits it an afternoon.
-        env:
-          SUBMODULE_TOKEN: ${{ secrets.SUBMODULE_TOKEN }}
-        run: |
-          if [ -z "$SUBMODULE_TOKEN" ]; then
-            echo "::error::SUBMODULE_TOKEN is not set. Create a fine-grained token with Contents: read on sysrv64/AI-Engines and add it as a repository secret named SUBMODULE_TOKEN. The submodule is private, so this workflow's own token cannot fetch it."
-            exit 1
-          fi
-
       - name: Check out, with the ai-engines submodule
         uses: actions/checkout@v7
         with:
           # `:app` depends on `:ai-engines`, which lives in the submodule; without it
-          # Gradle cannot configure the build at all.
+          # Gradle cannot configure the build at all. Both repositories are public,
+          # so the default token reads the submodule like any other public clone and
+          # no secret is involved.
           submodules: recursive
-          # Only needed if AI-Engines is private: this workflow's own token cannot
-          # read another private repository. Left unset, the default is used.
-          token: ${{ secrets.SUBMODULE_TOKEN || github.token }}
 
       - name: Set up JDK 21
         uses: actions/setup-java@v6
@@ -249,9 +234,11 @@ jobs:
         run: |
           # `gh` is on the runner image, so attaching the files costs one fewer action
           # version to keep current. `--clobber` lets a re-run of a tagged build
-          # replace the assets instead of failing on the ones already there.
+          # replace the assets instead of failing on the ones already there, and
+          # `--latest` marks this release as the current one explicitly rather than
+          # relying on it being the newest.
           gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1 \
-            || gh release create "$GITHUB_REF_NAME" --title "Rumo $GITHUB_REF_NAME" --generate-notes
+            || gh release create "$GITHUB_REF_NAME" --title "Rumo $GITHUB_REF_NAME" --generate-notes --latest
           gh release upload "$GITHUB_REF_NAME" --clobber \
             app/build/outputs/apk/release/*.apk \
             app/build/outputs/bundle/release/*.aab

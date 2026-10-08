@@ -119,13 +119,16 @@ lives in the composition's `remember`.
 On GitHub, in CI. Not on a workstation and not on a phone, which is where this
 was built until now and is not where it is built from here on.
 
-**The workflow is not written yet.** Until it is, treat these repositories as
-code that is written and reviewed here and built there: do not assume a working
-toolchain on the machine you are reading this on, and do not assume a build you
-ran locally is what CI will do.
+`ci.yml` runs the test gate and builds a debug APK on every push to `master` and
+every pull request. `release.yml` builds and signs a release on a `v*` tag and has
+no `pull_request` trigger at all, which is the only thing that keeps the signing
+key and write access out of reach of a pull request — do not add one.
 
-What that workflow will have to set up, because none of it lives in the
-repository:
+A build you ran locally is still not what CI will do: do not assume a toolchain
+on the machine you are reading this on, and check the run rather than your
+command line.
+
+What the workflows set up, because none of it lives in the repository:
 
 - The Android SDK and NDK, with `ANDROID_SDK_ROOT` and `ANDROID_NDK_HOME`
   exported. Gradle does not find them by itself on a bare runner, and `cargo ndk`
@@ -135,6 +138,11 @@ repository:
 
 The `.so` is built by hand rather than by Gradle — the reason is under [The
 APK](#the-apk) — so the order matters: cargo, then the strip, then the APK.
+
+Both repositories are public, so the `ai-engines/` submodule is read like any
+other public clone and no token is involved. Making `AI-Engines` private again
+breaks the checkout in both workflows, and that failure reads as "repository not
+found" rather than as a missing credential.
 
 ### What the old build hosts imposed, and does not apply any more
 

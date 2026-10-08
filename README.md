@@ -15,11 +15,15 @@ does not draw.
 
 ## Status
 
-Early. The engine is covered by unit tests, but the app has not been verified on
-a physical device, and the GPU tests are marked `#[ignore]` because CI has no
-adapter to run them on. A green workflow therefore says that the code compiles
-and that the CPU-side tests pass; it does not say that anything renders. Treat
-rendering output as unverified until you have run it yourself.
+Early. It has been run on one device and nowhere else: the author's own phone,
+one vendor's build of Android, one GPU. Other phones, other GPUs and other
+vendors' ROMs are untested, and testing them is what it needs next — a report
+from a device that behaves differently is the most useful thing right now.
+
+The engine is covered by unit tests, but the GPU tests are marked `#[ignore]`
+because CI has no adapter to run them on. A green workflow therefore says that
+the code compiles and that the CPU-side tests pass; it does not say that anything
+renders.
 
 ## Layout
 
@@ -49,10 +53,10 @@ rendering output as unverified until you have run it yourself.
 
 ## Building
 
-Builds run in **GitHub Actions**, not on a workstation or a phone. The workflow
-is not written yet; what follows is what it will have to run, and what to run by
-hand until it exists. Neither the SDK nor the Rust target is in the repository,
-so a runner has to install both.
+Builds run in **GitHub Actions**, not on a workstation or a phone.
+`.github/workflows/ci.yml` runs everything below on a push and on a pull request;
+what follows is what it runs, and what to run by hand. Neither the SDK nor the
+Rust target is in the repository, so a runner installs both.
 
 The engine is pure Rust with no C or C++ dependencies. That is a hard rule, not
 a preference: `cargo tree --target aarch64-linux-android -p rumo_bridge` must not
