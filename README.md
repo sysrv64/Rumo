@@ -16,9 +16,10 @@ does not draw.
 ## Status
 
 Early. The engine is covered by unit tests, but the app has not been verified on
-a physical device by the maintainers, and GPU tests are marked `#[ignore]`
-because the build hosts have no adapter. Treat rendering output as unverified
-until you have run it yourself.
+a physical device, and the GPU tests are marked `#[ignore]` because CI has no
+adapter to run them on. A green workflow therefore says that the code compiles
+and that the CPU-side tests pass; it does not say that anything renders. Treat
+rendering output as unverified until you have run it yourself.
 
 ## Layout
 
@@ -48,6 +49,11 @@ until you have run it yourself.
 
 ## Building
 
+Builds run in **GitHub Actions**, not on a workstation or a phone. The workflow
+is not written yet; what follows is what it will have to run, and what to run by
+hand until it exists. Neither the SDK nor the Rust target is in the repository,
+so a runner has to install both.
+
 The engine is pure Rust with no C or C++ dependencies. That is a hard rule, not
 a preference: `cargo tree --target aarch64-linux-android -p rumo_bridge` must not
 contain `cc` or `cmake`. Only `*-sys` and `ndk` bindings are allowed.
@@ -57,9 +63,9 @@ cd rumo-rs
 cargo test --workspace -j2
 ```
 
-The Android library, then the APK. `cargo-ndk` needs the NDK path exported by
-hand, and needs the sysroot and unwinder directories passed explicitly or it
-fails at the link step:
+The Android library, then the APK. `cargo-ndk` does not inherit Gradle's SDK
+location, and it needs the sysroot and unwinder directories passed explicitly or
+it fails at the link step:
 
 ```sh
 cd rumo-rs
@@ -73,16 +79,19 @@ cd ..
 sh gradlew :app:assembleDebug -x cargoBuild --console=plain --no-daemon
 ```
 
-`-x cargoBuild` is deliberate: Gradle would otherwise recompile the whole Rust
-graph under a different fingerprint and fail at the same link step. The artifact
-is `app/build/outputs/apk/debug/app-debug.apk`.
+`-x cargoBuild` is deliberate: the `.so` was just built, and Gradle would
+otherwise compile the whole Rust graph a second time under a different
+fingerprint. The order in the workflow is the same: cargo, strip, APK. The
+artifact is `app/build/outputs/apk/debug/app-debug.apk`.
 
 **Strip the library before packaging.** A `dev`-profile `.so` carries roughly
 230 MB of DWARF and 34 MB of symbol tables on top of about 38 MB of code. AGP
-runs `strip` itself, but its `llvm-strip` is an x86_64 binary and dies with
-`SIGILL` on an arm64 host, so the library is packaged verbatim and the APK is
-300 MB instead of 70. The Gradle `cargoBuild` task strips it; when you build the
-`.so` by hand as above, strip it yourself:
+does strip native libraries, but only with a `strip` tool it can execute; on an
+arm64 host the NDK's `llvm-strip` is an x86_64 binary that dies with `SIGILL`,
+so nothing is stripped and the APK is 300 MB instead of 70. A runner is x86_64
+and strips properly. Doing it explicitly anyway makes the packaged size the same
+on either kind of machine. The Gradle `cargoBuild` task strips it; when the
+`.so` is built by hand as above, strip it yourself:
 
 ```sh
 SO=../app/src/main/jniLibs/arm64-v8a/librumo_bridge.so

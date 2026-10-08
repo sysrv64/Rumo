@@ -114,18 +114,37 @@ the locale (`Context.withAppLanguage` in `ui/AppLanguage.kt`), not by
 `recreate()`. Restarting the activity would discard the open project, which
 lives in the composition's `remember`.
 
-## Environment
+## Where builds happen
 
-The build hosts are arm64 Linux containers with little RAM. That shapes the
-commands below.
+On GitHub, in CI. Not on a workstation and not on a phone, which is where this
+was built until now and is not where it is built from here on.
 
-- Gradle only with `--no-daemon`, and stop the daemons before a build:
-  `sh gradlew --stop`.
-- **One build at a time.** Parallel Gradle or cargo builds on these hosts run out
-  of memory; the link step of the native library is the first thing to fail.
-- cargo parallelism: `-j2` for tests, `-j1` for the Android build.
-- There is no environment in a bare shell. Export `ANDROID_SDK_ROOT` and
-  `ANDROID_NDK_HOME` yourself in every command that needs them.
+**The workflow is not written yet.** Until it is, treat these repositories as
+code that is written and reviewed here and built there: do not assume a working
+toolchain on the machine you are reading this on, and do not assume a build you
+ran locally is what CI will do.
+
+What that workflow will have to set up, because none of it lives in the
+repository:
+
+- The Android SDK and NDK, with `ANDROID_SDK_ROOT` and `ANDROID_NDK_HOME`
+  exported. Gradle does not find them by itself on a bare runner, and `cargo ndk`
+  never inherits Gradle's SDK location.
+- The Rust toolchain `rust-toolchain.toml` pins, with the
+  `aarch64-linux-android` target added.
+
+The `.so` is built by hand rather than by Gradle — the reason is under [The
+APK](#the-apk) — so the order matters: cargo, then the strip, then the APK.
+
+### What the old build hosts imposed, and does not apply any more
+
+This used to be built on arm64 Linux containers with very little RAM, and most
+of the operational folklore in this file came from that: `--no-daemon`, `-j1`,
+one build at a time. A hosted runner has enough memory for none of it to be
+necessary, and `-j2` for the test gate is enough. The constraints were real, so
+they are recorded rather than deleted: if a build is ever run on a small machine
+again, they come back with it, and the link step of the native library is the
+first thing to fail.
 
 ## Rust (`rumo-rs/`)
 
@@ -193,9 +212,14 @@ EOF
 #### Strip the library after building
 
 A `dev`-profile `.so` is about 230 MB of DWARF and 34 MB of symbol tables on top
-of roughly 38 MB of code. AGP runs `strip` itself, but its `llvm-strip` is an
-x86_64 binary and dies with `SIGILL` on an arm64 host, so the library is packaged
-verbatim and the APK ships at 300 MB instead of 70. Strip it here, after linking:
+of roughly 38 MB of code. AGP does run `strip` — but only with a `strip` tool it
+can execute, and on an arm64 host the NDK's `llvm-strip` is an x86_64 binary that
+dies with `SIGILL`, so it strips nothing and the library is packaged verbatim at
+300 MB instead of 70. A hosted runner is x86_64 and strips as it should.
+
+Stripping here anyway is deliberate: it makes the packaged size the same on both
+kinds of machine, and it is the difference between an APK that is worth
+downloading and one that is not. Run it after linking:
 
 ```sh
 SO=../app/src/main/jniLibs/arm64-v8a/librumo_bridge.so
@@ -222,9 +246,10 @@ sh gradlew :app:assembleDebug -x cargoBuild --console=plain --no-daemon
 ```
 
 `-x cargoBuild` is deliberate: the `.so` is built by the recipe above, and
-letting Gradle rebuild it recompiles the whole Rust graph under a different
-fingerprint and hits the same link failure — there is a silent fallback, but it
-costs about an hour. The artifact is
+letting Gradle rebuild it compiles the whole Rust graph a second time under a
+different fingerprint. On the machines this used to be built on that took about
+an hour; on a runner it is faster and still wasted work, and it is what the CI
+workflow must avoid doing twice. The artifact is
 `app/build/outputs/apk/debug/app-debug.apk`.
 
 If the APK is far larger than the library plus the dex files, it has dead space
@@ -237,8 +262,9 @@ against the sum of compressed entry sizes to confirm.
 
 Say what you checked and what you did not. Specifically:
 
-- A build that compiles is not a feature that works. There is no device in CI and
-  usually none attached; nothing visual has been observed.
+- A build that compiles is not a feature that works. A hosted runner has no
+  device and no GPU, so nothing visual has been observed by anything that ran
+  there, and a green workflow will not change that.
 - Do not describe untested code as working, and do not report a green build as
   verification of behaviour.
 - When you cannot verify something, say so in the commit message and in the pull
