@@ -47,6 +47,51 @@ jobs:
           distribution: temurin
           java-version: '21'
 
+      - name: Check the signing secrets are present
+        env:
+          RUMO_KEYSTORE_BASE64: ${{ secrets.RUMO_KEYSTORE_BASE64 }}
+          RUMO_KEYSTORE_PASSWORD: ${{ secrets.RUMO_KEYSTORE_PASSWORD }}
+          RUMO_KEY_ALIAS: ${{ secrets.RUMO_KEY_ALIAS }}
+          RUMO_KEY_PASSWORD: ${{ secrets.RUMO_KEY_PASSWORD }}
+        run: |
+          # Without the material Gradle creates no signing config, leaves the release
+          # unsigned and still succeeds — a release that looks built. All three checks
+          # sit here, ahead of the SDK, the toolchain and the release `.so` build,
+          # because a secret that is missing or mismatched does not deserve half an
+          # hour of compiling before it is reported.
+          missing=""
+          for name in RUMO_KEYSTORE_BASE64 RUMO_KEYSTORE_PASSWORD RUMO_KEY_ALIAS RUMO_KEY_PASSWORD; do
+            [ -n "${!name}" ] || missing="$missing $name"
+          done
+          [ -z "$missing" ] || { echo "::error::these secrets are unset or empty:$missing"; exit 1; }
+
+      - name: Decode the keystore
+        env:
+          RUMO_KEYSTORE_BASE64: ${{ secrets.RUMO_KEYSTORE_BASE64 }}
+        run: |
+          # The keystore exists for the life of this job only, and only under
+          # $RUNNER_TEMP: never inside the checkout, so no artifact glob and no cached
+          # directory can pick it up. The password reaches Gradle as an environment
+          # variable, never as an argument, which every process on the machine can
+          # read out of its command line.
+          umask 077
+          printf '%s' "$RUMO_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/rumo-release.jks"
+          echo "RUMO_KEYSTORE_FILE=$RUNNER_TEMP/rumo-release.jks" >> "$GITHUB_ENV"
+
+      - name: Check the keystore opens with those secrets
+        env:
+          RUMO_KEYSTORE_PASSWORD: ${{ secrets.RUMO_KEYSTORE_PASSWORD }}
+          RUMO_KEY_ALIAS: ${{ secrets.RUMO_KEY_ALIAS }}
+        run: |
+          # Four secrets can each be present and still not belong together, and a
+          # keystore rotated without its password rotated with it is the ordinary way
+          # that happens. AGP says so much later and in its own words; keytool names
+          # the one that is wrong while the job is still cheap. `set -e` is on, so a
+          # wrong password or a wrong alias fails the step by itself, and `keytool` is
+          # on PATH because setup-java put the JDK there.
+          keytool -list -keystore "$RUMO_KEYSTORE_FILE" \
+            -storepass "$RUMO_KEYSTORE_PASSWORD" -alias "$RUMO_KEY_ALIAS" > /dev/null
+
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
 
@@ -146,35 +191,6 @@ jobs:
           done
           echo "::error::no working strip tool, so the .so would be packaged unstripped" >&2
           exit 1
-
-      - name: Check the signing secrets are present
-        env:
-          RUMO_KEYSTORE_BASE64: ${{ secrets.RUMO_KEYSTORE_BASE64 }}
-          RUMO_KEYSTORE_PASSWORD: ${{ secrets.RUMO_KEYSTORE_PASSWORD }}
-          RUMO_KEY_ALIAS: ${{ secrets.RUMO_KEY_ALIAS }}
-          RUMO_KEY_PASSWORD: ${{ secrets.RUMO_KEY_PASSWORD }}
-        run: |
-          # Without the material Gradle creates no signing config, leaves the release
-          # unsigned and still succeeds — a release that looks built. Stop before
-          # anything is compiled instead.
-          missing=""
-          for name in RUMO_KEYSTORE_BASE64 RUMO_KEYSTORE_PASSWORD RUMO_KEY_ALIAS RUMO_KEY_PASSWORD; do
-            [ -n "${!name}" ] || missing="$missing $name"
-          done
-          [ -z "$missing" ] || { echo "::error::these secrets are unset or empty:$missing"; exit 1; }
-
-      - name: Decode the keystore
-        env:
-          RUMO_KEYSTORE_BASE64: ${{ secrets.RUMO_KEYSTORE_BASE64 }}
-        run: |
-          # The keystore exists for the life of this job only, and only under
-          # $RUNNER_TEMP: never inside the checkout, so no artifact glob and no cached
-          # directory can pick it up. The password reaches Gradle as an environment
-          # variable, never as an argument, which every process on the machine can
-          # read out of its command line.
-          umask 077
-          printf '%s' "$RUMO_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/rumo-release.jks"
-          echo "RUMO_KEYSTORE_FILE=$RUNNER_TEMP/rumo-release.jks" >> "$GITHUB_ENV"
 
       - name: Build and sign the release APK and AAB
         env:
