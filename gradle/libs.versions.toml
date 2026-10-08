@@ -1,0 +1,37 @@
+[versions]
+# Version numbers only, taken from upstream libs.versions.toml (no upstream code).
+agp = "9.5.0-alpha02"
+kotlin = "2.4.20-RC"
+composeBom = "2026.08.00"
+material3 = "1.5.0-alpha26"
+materialLegacy = "1.13.0"
+coreKtx = "1.19.0"
+activityCompose = "1.13.0"
+lifecycleRuntime = "2.12.0-alpha01"
+navigationCompose = "2.10.0-rc01"
+materialKolor = "5.0.0"
+# Markdown in Rumi's transcript. Apache-2.0; built against androidx.compose
+# 1.12.0 — exactly what our BOM resolves to — and declares no Compose
+# dependencies of its own, so it cannot pull a second Compose into the build.
+markdownRenderer = "0.45.0"
+
+[libraries]
+androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
+androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycleRuntime" }
+androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
+androidx-compose-ui = { group = "androidx.compose.ui", name = "ui" }
+androidx-compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
+androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3", version.ref = "material3" }
+# Version comes from the compose BOM (2026.08.00 -> 1.7.8).
+androidx-compose-material-icons-extended = { group = "androidx.compose.material", name = "material-icons-extended" }
+androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationCompose" }
+material-kolor = { module = "com.materialkolor:material-kolor", version.ref = "materialKolor" }
+material = { group = "com.google.android.material", name = "material", version.ref = "materialLegacy" }
+markdown-renderer = { module = "com.mikepenz:multiplatform-markdown-renderer", version.ref = "markdownRenderer" }
+markdown-renderer-m3 = { module = "com.mikepenz:multiplatform-markdown-renderer-m3", version.ref = "markdownRenderer" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+android-library = { id = "com.android.library", version.ref = "agp" }
+kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }

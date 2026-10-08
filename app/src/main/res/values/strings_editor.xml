@@ -1,0 +1,499 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    The editor area: the editor screen, its panels and the project screens.
+
+    Keys shared by several screens in this file keep one prefix per group
+    (`editor_`, `panel_`, `projects_`, `home_`, `nav_`) so the same verb cannot
+    drift apart between screens. Keys that already exist in strings_settings.xml
+    (`action_back`, `action_close`, `settings_title`, `diagnostics_*`) are
+    referenced, not duplicated.
+-->
+<resources>
+
+    <!-- ===================== Bottom bar (RumoBottomBar.kt) ===================== -->
+
+    <string name="nav_home">Home</string>
+    <!-- The assistant's name is a proper name: it stays Latin in every locale,
+         the same way strings_settings.xml keeps "Rumi" untranslated. -->
+    <string name="nav_rumi" translatable="false">Rumi</string>
+    <string name="nav_projects">Projects</string>
+    <string name="nav_shop">Shop</string>
+    <string name="nav_new_project">New project</string>
+
+    <!-- ===================== Home (HomeScreen.kt) ===================== -->
+
+    <string name="home_recent">Recent projects</string>
+    <string name="home_all">All</string>
+    <string name="home_empty_title">No projects yet</string>
+    <string name="home_empty_message">A project holds your timeline, clips and exports.</string>
+    <string name="home_start_one">Start one</string>
+    <string name="home_ask_rumi">Ask Rumi</string>
+    <string name="home_ask_rumi_hint">The built-in assistant: it edits, renders and checks its own work.</string>
+    <string name="home_delete_project">Delete project</string>
+
+    <!-- ===================== Projects (ProjectsScreen.kt) ===================== -->
+
+    <string name="projects_title">Projects</string>
+    <string name="projects_reading">Reading the project folder…</string>
+    <string name="projects_none">Nothing saved yet</string>
+    <string name="projects_edited_at">Edited %1$s</string>
+    <!-- A copy's name is also its file name and is not translated; see the note
+         in ProjectsScreen.clone(). -->
+    <plurals name="projects_saved_count">
+        <item quantity="one">%1$d saved project</item>
+        <item quantity="other">%1$d saved projects</item>
+    </plurals>
+    <string name="projects_empty_title">No saved projects yet</string>
+    <string name="projects_empty_message">The plus button starts one, and Rumi\'s project tool saves what the assistant built.</string>
+    <string name="projects_start_one">Start one</string>
+    <string name="projects_actions">Actions for %1$s</string>
+    <string name="projects_rename">Rename</string>
+    <string name="projects_clone">Clone</string>
+    <string name="projects_export">Export</string>
+    <string name="projects_delete">Delete</string>
+    <string name="projects_rename_title">Rename project</string>
+    <string name="projects_rename_name">Name</string>
+    <string name="projects_cancel">Cancel</string>
+    <string name="projects_ok">OK</string>
+    <string name="projects_delete_title">Delete this project?</string>
+    <string name="projects_delete_message">“%1$s” will be removed from the project folder. This cannot be undone.</string>
+    <string name="projects_read_failed">Could not read “%1$s”.</string>
+    <string name="projects_cloned">Cloned to “%1$s”.</string>
+    <string name="projects_exported">Exported to %1$s.</string>
+    <string name="projects_export_failed">Export failed: %1$s</string>
+
+    <!-- ===================== Editor screen (EditorScreen.kt) ===================== -->
+
+    <string name="editor_layer_deleted">Layer deleted</string>
+    <string name="editor_undo">Undo</string>
+    <string name="editor_redo">Redo</string>
+    <string name="editor_cancel">Cancel</string>
+
+    <string name="editor_layer_background">Background</string>
+    <string name="editor_shape_frame">Background</string>
+    <string name="editor_add_layer">Add layer</string>
+    <string name="editor_save_project">Save project</string>
+    <string name="editor_more">More</string>
+    <string name="editor_node_graph">Node graph</string>
+    <string name="editor_canvas_menu">Canvas…</string>
+    <string name="editor_project_folder">Project folder</string>
+    <string name="editor_export_mp4">Export MP4</string>
+    <string name="editor_fit_frame">Fit frame</string>
+    <string name="editor_fill_frame">Fill frame</string>
+    <string name="editor_open_failed">file did not open, started fresh</string>
+    <string name="editor_unsaved_title">Unsaved changes</string>
+    <string name="editor_unsaved_message">Save the project before leaving?</string>
+    <string name="editor_unsaved_save_exit">Save and exit</string>
+    <string name="editor_unsaved_discard">Discard</string>
+    <string name="editor_preview_gpu_unavailable">GPU path unavailable</string>
+    <string name="editor_preview_gpu_unavailable_hint">This device refused a rendering surface — see Diagnostics</string>
+    <string name="editor_preview_empty">Empty frame</string>
+    <string name="editor_preview_empty_hint">Add a shape, a photo or text in Media</string>
+    <string name="editor_transport_start">Jump to start</string>
+    <string name="editor_transport_pause">Pause</string>
+    <string name="editor_transport_play">Play</string>
+    <string name="editor_transport_end">Jump to end</string>
+    <string name="editor_video_unreadable">Could not read this video — the clip was never opened</string>
+    <!-- The two leading spaces are the gap the row has no Arrangement for. -->
+    <string name="editor_timeline_empty">  Timeline is empty — add a layer in Media</string>
+
+    <!-- ===================== Saving and export (EditorScreen.kt, Export.kt) ===== -->
+
+    <string name="editor_save_encode_failed">Could not save: the project could not be encoded</string>
+    <string name="editor_save_failed">Could not save %1$s: %2$s</string>
+    <string name="editor_save_unknown_error">unknown error</string>
+    <string name="editor_saved">Saved %1$s</string>
+    <string name="editor_folder_hint">Folder: Download/%1$s</string>
+    <string name="editor_export_running">Exporting MP4</string>
+    <string name="editor_export_failed">Export failed: %1$s</string>
+    <string name="editor_export_saved">Saved to Download/Rumo</string>
+    <string name="editor_export_write_failed">Could not write to Download/Rumo: %1$s</string>
+    <string name="editor_export_resolution">Resolution</string>
+    <string name="editor_export_frame_rate">Frame rate</string>
+    <!-- Appended to the engine's preset label; the label itself is data. -->
+    <string name="editor_export_portrait_suffix"> Portrait</string>
+    <string name="editor_export_summary">%1$d×%2$d @ %3$d fps</string>
+    <string name="editor_export_action">Export</string>
+    <string name="editor_export_hide">Hide</string>
+
+    <!-- ===================== Editor dock (EditorDock.kt) ===================== -->
+
+    <string name="editor_dock_done">Done</string>
+
+    <!-- ===================== Canvas dialog (CanvasDialog.kt) ===================== -->
+
+    <string name="editor_canvas_title">Canvas</string>
+    <string name="editor_canvas_hint">The frame the project is composed in. Presets are the same list the exporter offers; the numbers are free.</string>
+    <string name="editor_canvas_width">Width</string>
+    <string name="editor_canvas_height">Height</string>
+    <string name="editor_canvas_background">Background</string>
+    <string name="editor_canvas_background_colour">Background colour</string>
+    <string name="editor_canvas_range">Width and height must be between %1$d and %2$d.</string>
+    <string name="editor_canvas_apply">Apply</string>
+
+    <!-- ===================== Render diagnostics (RenderDiagnosticsDialog.kt) ==== -->
+
+    <!-- GPU/CPU are the graphics API's own words and read the same in every locale. -->
+    <string name="editor_diag_path_gpu" translatable="false">GPU</string>
+    <string name="editor_diag_path_cpu" translatable="false">CPU</string>
+    <string name="editor_diag_path_unknown">UNKNOWN</string>
+    <string name="editor_diag_no_gpu">no GPU device</string>
+    <!-- %1$s is GPU or CPU. "surface"/"offscreen" name the two render paths the
+         diagnostics report on. -->
+    <string name="editor_diag_pill_surface">surface: %1$s</string>
+    <string name="editor_diag_pill_offscreen">offscreen: %1$s</string>
+    <string name="editor_diag_layer_status">Layer status</string>
+    <string name="editor_diag_unavailable">Native diagnostics are unavailable.</string>
+    <string name="editor_diag_rejected_effects">Rejected effects</string>
+    <string name="editor_diag_log">Log</string>
+    <string name="editor_diag_empty">No diagnostics recorded yet</string>
+    <string name="editor_diag_empty_hint">Nothing has been logged for this session.</string>
+    <string name="editor_diag_refresh">Refresh</string>
+    <!-- Shown by the system as the clipboard's label. -->
+    <string name="editor_diag_clip_label">rumo render diagnostics</string>
+    <string name="editor_diag_copied">Diagnostics copied</string>
+    <string name="editor_diag_copy">Copy</string>
+    <string name="editor_diag_clear">Clear</string>
+
+    <!-- ===================== Project folder note (ProjectAssets.kt) ============= -->
+
+    <!-- Written into the project's reference folder as README.txt, once, when the
+         folder is created. %1$s is the folder name. -->
+    <string name="editor_assets_readme">\"%1$s\" — the reference folder of a Rumo project.\n\nPut the project\'s material here: pictures, video, sound.\nRumo and the Rumi assistant read files from here: a file can be named\nright in the chat, and the import takes it into the project as a layer.\n\nThe folder lives outside the app, so reinstalling Rumo does not delete it.\nThis file creates the folder itself — there is no need to delete it.\n</string>
+
+    <!-- ===================== Panels: shared ==================================== -->
+
+    <string name="panel_add">Add</string>
+    <string name="panel_ok">OK</string>
+    <string name="panel_cancel">Cancel</string>
+    <string name="panel_delete">Delete</string>
+    <string name="panel_hide">Hide</string>
+    <string name="panel_show">Show</string>
+    <string name="panel_lock">Lock</string>
+    <string name="panel_unlock">Unlock</string>
+    <string name="panel_rename">Rename</string>
+    <string name="panel_rename_title">Rename layer</string>
+    <string name="panel_rename_name">Name</string>
+    <!-- A value that is switched off; used by the stroke row and by an off effect. -->
+    <string name="panel_off">off</string>
+    <!-- The row's reset button, announced with the property's own label. -->
+    <string name="panel_control_reset">Reset %1$s</string>
+    <string name="panel_add_layer">Add layer</string>
+
+    <!-- ===================== Panels: icons and page titles ===================== -->
+
+    <!-- Spoken by a screen reader for the kind mark; LayerKindUi.name is the
+         enum constant and is not a word. -->
+    <string name="panel_kind_shape">Shape</string>
+    <string name="panel_kind_text">Text</string>
+    <string name="panel_kind_media">Media</string>
+    <string name="panel_kind_audio">Audio</string>
+
+    <string name="panel_layers">Layers</string>
+    <string name="panel_properties">Properties</string>
+    <string name="panel_media">Media</string>
+    <string name="panel_audio">Audio</string>
+    <string name="panel_fonts">Fonts</string>
+
+    <!-- ===================== Panels: layers (LayersPanel.kt) =================== -->
+
+    <plurals name="panel_layers_subtitle">
+        <item quantity="one">%1$d layer · first row paints first</item>
+        <item quantity="other">%1$d layers · first row paints first</item>
+    </plurals>
+    <string name="panel_layers_empty">Empty stack</string>
+    <string name="panel_layers_empty_hint">Add a shape, a photo or text in Media.</string>
+    <string name="panel_layers_tris">%1$d tris</string>
+    <plurals name="panel_layers_keys">
+        <item quantity="one">%1$d key</item>
+        <item quantity="other">%1$d keys</item>
+    </plurals>
+    <string name="panel_layers_hidden">HIDDEN</string>
+    <string name="panel_layers_locked">LOCKED</string>
+    <string name="panel_layers_change_shape">Change shape</string>
+    <string name="panel_layers_current_shape">Current shape</string>
+    <string name="panel_layers_reorder">Reorder</string>
+    <string name="panel_layers_menu">Layer menu</string>
+
+    <!-- ===================== Panels: audio (AudioPanel.kt) ===================== -->
+
+    <string name="panel_audio_subtitle">%1$d/%2$d tracks live in the engine</string>
+    <string name="panel_pause_playback">Pause playback</string>
+    <string name="panel_resume_playback">Resume playback</string>
+    <string name="panel_audio_import">Import audio</string>
+    <string name="panel_audio_playhead_playing">Playhead %1$s · playing</string>
+    <string name="panel_audio_playhead_paused">Playhead %1$s · paused</string>
+    <string name="panel_audio_empty">No audio</string>
+    <string name="panel_audio_empty_hint">The first live track becomes the master clock for playback.</string>
+    <string name="panel_audio_decoded">DECODED · %1$s</string>
+    <string name="panel_audio_no_player">NO PLAYER · %1$s</string>
+    <string name="panel_audio_seek">Seek track to playhead</string>
+
+    <!-- ===================== Panels: fonts (FontsPanel.kt) ===================== -->
+
+    <string name="panel_fonts_none">nothing installed</string>
+    <string name="panel_fonts_installed">%1$d installed</string>
+    <string name="panel_fonts_select_text">Select a text layer to apply a font — fonts are text-only.</string>
+    <string name="panel_fonts_selected_uses">Selected text uses %1$s.</string>
+    <!-- The built-in face has no bytes on disk; this is its name, shared by the
+         Fonts page and the font picker in Properties. -->
+    <string name="panel_font_builtin">Built-in monospace</string>
+    <string name="panel_fonts_always_available">Always available</string>
+    <string name="panel_fonts_empty">No fonts installed</string>
+    <string name="panel_fonts_empty_hint">Fonts come from the Shop tab — install one there and it appears here with a live preview.</string>
+    <string name="panel_fonts_license_installed">Installed</string>
+    <string name="panel_fonts_in_use">In use</string>
+    <string name="panel_fonts_options">Font options</string>
+
+    <!-- ===================== Panels: properties (InspectorPanel.kt) ============= -->
+
+    <string name="panel_inspector_font">Font</string>
+    <string name="panel_inspector_back_builtin">Back to the built-in font</string>
+    <string name="panel_inspector_no_fonts">No fonts installed yet. The Shop tab downloads them.</string>
+    <string name="panel_inspector_empty">Nothing selected</string>
+    <string name="panel_inspector_empty_hint">Tap a clip in the timeline, a tile in Library or a layer row.</string>
+    <string name="panel_inspector_locked">%1$s · locked</string>
+    <string name="panel_inspector_show_pipeline">Show pipeline</string>
+    <string name="panel_inspector_section_text">Text</string>
+    <string name="panel_inspector_layer_text">Layer text</string>
+    <string name="panel_inspector_weight">Weight</string>
+    <!-- The nine named weights the engine's font database recognises. The shop's
+         and the model's own lists are separate and stay English. -->
+    <string name="panel_weight_thin">Thin</string>
+    <string name="panel_weight_extra_light">ExtraLight</string>
+    <string name="panel_weight_light">Light</string>
+    <string name="panel_weight_regular">Regular</string>
+    <string name="panel_weight_medium">Medium</string>
+    <string name="panel_weight_semi_bold">SemiBold</string>
+    <string name="panel_weight_bold">Bold</string>
+    <string name="panel_weight_extra_bold">ExtraBold</string>
+    <string name="panel_weight_black">Black</string>
+    <string name="panel_inspector_axis">Axis</string>
+    <string name="panel_inspector_section_outline">Outline</string>
+    <string name="panel_inspector_thickness">Thickness</string>
+    <string name="panel_inspector_outline_colour">Outline colour</string>
+    <string name="panel_inspector_choose_outline_colour">Choose outline colour</string>
+    <string name="panel_inspector_section_transform">Transform</string>
+    <string name="panel_inspector_offset_x">Offset X</string>
+    <string name="panel_inspector_offset_y">Offset Y</string>
+    <string name="panel_inspector_rotation">Rotation</string>
+    <string name="panel_inspector_section_appearance">Appearance</string>
+    <string name="panel_inspector_opacity">Opacity</string>
+    <string name="panel_inspector_colour">Colour</string>
+    <string name="panel_inspector_choose_colour">Choose layer colour</string>
+    <string name="panel_inspector_layer_colour">Layer colour</string>
+    <string name="panel_inspector_section_timing">Timing</string>
+    <string name="panel_inspector_clip_length">Clip length</string>
+    <string name="panel_inspector_drives_length">Drives the project length · playhead %1$s</string>
+    <string name="panel_effects">Effects</string>
+    <string name="panel_inspector_no_gain">no gain stage in engine</string>
+    <string name="panel_inspector_file_linked">file linked</string>
+    <string name="panel_inspector_no_file">no file</string>
+    <string name="panel_inspector_remove_key">Remove keyframe</string>
+    <string name="panel_inspector_add_key">Add key</string>
+
+    <!-- ===================== Panels: media (MediaPanel.kt) ====================== -->
+
+    <string name="panel_media_tab_shapes">Shapes</string>
+    <string name="panel_media_tab_photos">Photos</string>
+    <string name="panel_media_tab_svg">SVG</string>
+    <string name="panel_media_tab_text">Text</string>
+    <plurals name="panel_media_shapes">
+        <item quantity="one">%1$d shape</item>
+        <item quantity="other">%1$d shapes</item>
+    </plurals>
+    <plurals name="panel_media_photos">
+        <item quantity="one">%1$d photo</item>
+        <item quantity="other">%1$d photos</item>
+    </plurals>
+    <plurals name="panel_media_svg">
+        <item quantity="one">%1$d svg</item>
+        <item quantity="other">%1$d svg</item>
+    </plurals>
+    <plurals name="panel_media_audio">
+        <item quantity="one">%1$d audio</item>
+        <item quantity="other">%1$d audio</item>
+    </plurals>
+    <string name="panel_media_import_photo">Import photo</string>
+    <string name="panel_media_import_video">Import video</string>
+    <string name="panel_media_photos_empty">No photos yet</string>
+    <string name="panel_media_photos_empty_hint">Import a photo — it lands on the timeline as a clip.</string>
+    <string name="panel_media_photo_meta">PHOTO · %1$s</string>
+    <string name="panel_media_import_svg">Import SVG</string>
+    <string name="panel_media_svg_empty">No SVG yet</string>
+    <string name="panel_media_svg_empty_hint">Import an .svg file — it is copied into the project folder and drawn as vector geometry.</string>
+    <string name="panel_media_svg_meta">SVG · vector</string>
+    <string name="panel_media_text_meta">TEXT · edit in Properties</string>
+    <string name="panel_media_new_text">New text layer</string>
+    <string name="panel_media_tris">%1$d tris</string>
+    <string name="panel_media_svg_failed">SVG import failed</string>
+    <string name="panel_media_svg_lossy_title">SVG uses what vector cannot draw</string>
+    <!-- %1$s is the file name, %2$d how many elements the vector renderer skips. -->
+    <string name="panel_media_svg_lossy_message">«%1$s» uses %2$d element(s) the vector renderer skips (patterns, masks, clip paths, filters, text). Draw it as a picture to keep all of them — the picture is a normal image layer, so it does not scale without blurring.</string>
+    <string name="panel_media_svg_refused_title">SVG cannot be drawn as vector</string>
+    <string name="panel_media_svg_refused_message">«%1$s» was refused by the vector renderer. Draw it as a picture instead: the whole document renders, but as a normal image layer, so it does not scale without blurring.</string>
+    <string name="panel_media_svg_refused_message_reason">«%1$s» was refused by the vector renderer (%2$s). Draw it as a picture instead: the whole document renders, but as a normal image layer, so it does not scale without blurring.</string>
+    <string name="panel_media_svg_raster">Render as picture</string>
+    <string name="panel_media_svg_vector">Draw as vector</string>
+
+    <!-- ===================== Panels: effects (EffectsPanel.kt) ================== -->
+
+    <string name="panel_effects_reorder">Reorder effect</string>
+    <string name="panel_effects_unavailable">unavailable</string>
+    <string name="panel_effects_actions">Effect actions</string>
+    <string name="panel_effects_chain">Effect chain</string>
+    <string name="panel_effects_add">Add effect</string>
+    <string name="panel_effects_no_catalogue">the engine reported no effect catalogue</string>
+    <string name="panel_effects_empty">No effects</string>
+    <string name="panel_effects_empty_hint">Add one: effects run top to bottom, in this order.</string>
+    <string name="panel_effects_unknown">unknown effect — no parameters</string>
+    <string name="panel_effects_no_params">this effect has no parameters</string>
+    <string name="panel_effects_preview_on">Preview on %1$s</string>
+    <string name="panel_effects_no_preview_layer">No visible layer to preview on</string>
+    <string name="panel_effects_search">Search effects</string>
+    <string name="panel_effects_no_catalogue_long">The engine reported no effect catalogue.</string>
+    <string name="panel_effects_shop">SHOP</string>
+    <string name="panel_effects_add_to_layer">Add to layer</string>
+    <string name="panel_effects_choose">Choose %1$s</string>
+    <string name="panel_effects_alpha">Alpha</string>
+    <string name="panel_effects_no_choices">no choices</string>
+    <string name="panel_effects_value">Value</string>
+    <string name="panel_effects_set">Set</string>
+    <string name="panel_effects_hue">Hue</string>
+    <string name="panel_effects_colour">Colour %1$s</string>
+    <string name="panel_effects_done">Done</string>
+
+    <!-- ===================== Effects: the engine's vocabulary =================== -->
+
+    <!-- The engine ships its effect names, parameter labels and choice values as
+         English `&'static str`, and those strings are also the identity it acts on:
+         an id addresses a built-in effect, a (effect id, parameter key) pair
+         addresses a parameter, a choice value comes back as its index. EffectsPanel.kt
+         maps that identity to these strings at the display site; a miss falls back to
+         the engine's own text, so an effect added to rumo-core is still shown, just
+         untranslated. Nothing here is ever sent to the engine.
+         The English below is deliberately identical to the engine's own spelling —
+         including "Colour Tune" and "Reorient Sphere" — so English reads exactly as
+         it did before this block existed. Only values-ru/ and values-zh/ differ. -->
+
+    <string name="effect_name_blur">Blur</string>
+    <string name="effect_name_color_tune">Colour Tune</string>
+    <string name="effect_name_threshold">Threshold</string>
+    <string name="effect_name_chroma_key">Chroma Key</string>
+    <string name="effect_name_copy_background">Copy Background</string>
+    <string name="effect_name_pixelate">Pixelate</string>
+    <string name="effect_name_sphere360">Reorient Sphere</string>
+    <string name="effect_name_drop_shadow">Drop Shadow</string>
+    <string name="effect_name_inner_shadow">Inner Shadow</string>
+    <string name="effect_name_glow">Glow</string>
+
+    <!-- Parameter labels, keyed by effect id + parameter key. The engine reuses a
+         key with different labels (`color` is "Colour" here and "Tint" in glow), so
+         the resource name carries both halves. -->
+    <string name="effect_param_blur_mode">Mode</string>
+    <string name="effect_param_blur_radius">Radius</string>
+    <string name="effect_param_blur_angle">Angle</string>
+    <string name="effect_param_blur_downscale">Downscale</string>
+    <string name="effect_param_color_tune_hue">Hue</string>
+    <string name="effect_param_color_tune_chroma">Chroma</string>
+    <string name="effect_param_color_tune_lightness">Lightness</string>
+    <string name="effect_param_color_tune_brightness">Brightness</string>
+    <string name="effect_param_color_tune_contrast">Contrast</string>
+    <string name="effect_param_color_tune_saturation">Saturation</string>
+    <string name="effect_param_threshold_level">Level</string>
+    <string name="effect_param_threshold_softness">Softness</string>
+    <string name="effect_param_threshold_mode">Mode</string>
+    <string name="effect_param_chroma_key_key">Key Colour</string>
+    <string name="effect_param_chroma_key_similarity">Similarity</string>
+    <string name="effect_param_chroma_key_softness">Softness</string>
+    <string name="effect_param_chroma_key_spill">Spill Suppression</string>
+    <string name="effect_param_copy_background_mode">Mode</string>
+    <string name="effect_param_copy_background_color">Colour</string>
+    <string name="effect_param_copy_background_tolerance">Tolerance</string>
+    <string name="effect_param_copy_background_feather">Feather</string>
+    <string name="effect_param_pixelate_size">Block Size</string>
+    <string name="effect_param_pixelate_shape">Shape</string>
+    <string name="effect_param_sphere360_radius">Radius</string>
+    <string name="effect_param_sphere360_yaw">Yaw</string>
+    <string name="effect_param_sphere360_pitch">Pitch</string>
+    <string name="effect_param_sphere360_fov">Field of View</string>
+    <string name="effect_param_drop_shadow_offset_x">Offset X</string>
+    <string name="effect_param_drop_shadow_offset_y">Offset Y</string>
+    <string name="effect_param_drop_shadow_blur">Blur</string>
+    <string name="effect_param_drop_shadow_spread">Spread</string>
+    <string name="effect_param_drop_shadow_color">Colour</string>
+    <string name="effect_param_drop_shadow_opacity">Opacity</string>
+    <string name="effect_param_inner_shadow_offset_x">Offset X</string>
+    <string name="effect_param_inner_shadow_offset_y">Offset Y</string>
+    <string name="effect_param_inner_shadow_blur">Blur</string>
+    <string name="effect_param_inner_shadow_spread">Spread</string>
+    <string name="effect_param_inner_shadow_color">Colour</string>
+    <string name="effect_param_inner_shadow_opacity">Opacity</string>
+    <string name="effect_param_glow_threshold">Threshold</string>
+    <string name="effect_param_glow_radius">Radius</string>
+    <string name="effect_param_glow_intensity">Intensity</string>
+    <string name="effect_param_glow_color">Tint</string>
+    <string name="effect_param_glow_tint">Tint Amount</string>
+
+    <!-- Choice values, keyed by the engine's own value, which is the value that goes
+         back on a tap: only the caption is translated. -->
+    <string name="effect_choice_gaussian">Gaussian</string>
+    <string name="effect_choice_box">Box</string>
+    <string name="effect_choice_directional">Directional</string>
+    <string name="effect_choice_mask">Mask</string>
+    <string name="effect_choice_luma">Luma</string>
+    <string name="effect_choice_alpha">Alpha</string>
+    <string name="effect_choice_chroma">Chroma</string>
+    <string name="effect_choice_black">Black</string>
+    <string name="effect_choice_white">White</string>
+    <string name="effect_choice_color">Color</string>
+    <string name="effect_choice_square">Square</string>
+    <string name="effect_choice_hex">Hex</string>
+
+    <!-- ===================== Panels: nodes (NodesPanel.kt) ====================== -->
+
+    <string name="panel_node_source">Source</string>
+    <string name="panel_node_transform">Transform</string>
+    <string name="panel_node_appearance">Appearance</string>
+    <string name="panel_node_transition">Transition</string>
+    <string name="panel_node_timing">Timing</string>
+    <string name="panel_node_output">Output</string>
+    <plurals name="panel_nodes_params">
+        <item quantity="one">%1$d param</item>
+        <item quantity="other">%1$d params</item>
+    </plurals>
+    <string name="panel_nodes_cross_fade">cross-fade</string>
+    <string name="panel_nodes_fade_in">fade in</string>
+    <string name="panel_nodes_not_set">not set</string>
+    <!-- The output stage's summary; %1$s is the render path (GPU, CPU, …). -->
+    <string name="panel_nodes_output">Ex compositor · %1$s</string>
+    <plurals name="panel_nodes_keys">
+        <item quantity="one">%1$d key</item>
+        <item quantity="other">%1$d keys</item>
+    </plurals>
+    <string name="panel_nodes_no_cross_fade">no cross-fade</string>
+    <string name="panel_nodes_set_cross_fade">Set cross-fade</string>
+    <string name="panel_nodes_cross_fade_hint">Fades this layer in over the layer under it.</string>
+    <string name="panel_nodes_start">Start</string>
+    <string name="panel_nodes_duration">Duration</string>
+    <string name="panel_nodes_with_below">With the layer below</string>
+    <string name="panel_nodes_enabled">Enabled</string>
+    <string name="panel_nodes_remove">Remove</string>
+    <string name="panel_nodes_disable">Disable</string>
+    <string name="panel_nodes_enable">Enable</string>
+    <string name="panel_nodes_locked">Layer is locked — unlock it in Layers to move it.</string>
+    <plurals name="panel_nodes_rotation_keys">
+        <item quantity="one">%1$d rotation key</item>
+        <item quantity="other">%1$d rotation keys</item>
+    </plurals>
+    <string name="panel_nodes_scene">512×288 scene</string>
+    <!-- The two render paths, as the engine names them. -->
+    <string name="panel_nodes_surface">SURFACE</string>
+    <string name="panel_nodes_bitmap">BITMAP</string>
+    <string name="panel_nodes_add_effect">Add effect node</string>
+    <string name="panel_nodes_subtitle">%1$s · drag to move, tap for parameters</string>
+    <string name="panel_nodes_no_layer">no layer</string>
+    <string name="panel_nodes_reset">Reset</string>
+    <string name="panel_nodes_close">Close node graph</string>
+
+</resources>

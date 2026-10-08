@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Intentionally empty: values/strings.xml holds only translatable="false"
+     entries (the brand name and the language names), which values-zh/ also omits.
+     This file exists so the Traditional set mirrors the shipped locale folders. -->
+<resources>
+</resources>

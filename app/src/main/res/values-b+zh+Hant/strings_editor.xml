@@ -1,0 +1,468 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!--
+    The editor area: the editor screen, its panels and the project screens.
+
+    Keys shared by several screens in this file keep one prefix per group
+    (`editor_`, `panel_`, `projects_`, `home_`, `nav_`) so the same verb cannot
+    drift apart between screens. Keys that already exist in strings_settings.xml
+    (`action_back`, `action_close`, `settings_title`, `diagnostics_*`) are
+    referenced, not duplicated.
+-->
+
+    <string name="nav_home">首頁</string>
+    <string name="nav_projects">專案</string>
+    <string name="nav_shop">商店</string>
+    <string name="nav_new_project">新增專案</string>
+
+    <!-- ===================== Home (HomeScreen.kt) ===================== -->
+
+    <string name="home_recent">最近的專案</string>
+    <string name="home_all">全部</string>
+    <string name="home_empty_title">還沒有專案</string>
+    <string name="home_empty_message">專案用來存放時間軸、剪輯和匯出內容。</string>
+    <string name="home_start_one">新增一個</string>
+    <string name="home_ask_rumi">問問 Rumi</string>
+    <string name="home_ask_rumi_hint">內建助手：自己剪輯、渲染，並檢查自己的成果。</string>
+    <string name="home_delete_project">刪除專案</string>
+
+    <!-- ===================== Projects (ProjectsScreen.kt) ===================== -->
+
+    <string name="projects_title">專案</string>
+    <string name="projects_reading">正在讀取專案資料夾…</string>
+    <string name="projects_none">還沒有儲存的內容</string>
+    <string name="projects_edited_at">編輯於 %1$s</string>
+    <plurals name="projects_saved_count">
+        <item quantity="other">%1$d 個已儲存專案</item>
+    </plurals>
+    <string name="projects_empty_title">還沒有已儲存的專案</string>
+    <string name="projects_empty_message">點選加號即可新增，Rumi 的專案工具會儲存助手製作的內容。</string>
+    <string name="projects_start_one">新增一個</string>
+    <string name="projects_actions">“%1$s”的操作</string>
+    <string name="projects_rename">重新命名</string>
+    <string name="projects_clone">建立副本</string>
+    <string name="projects_export">匯出</string>
+    <string name="projects_delete">刪除</string>
+    <string name="projects_rename_title">重新命名專案</string>
+    <string name="projects_rename_name">名稱</string>
+    <string name="projects_cancel">取消</string>
+    <string name="projects_ok">確定</string>
+    <string name="projects_delete_title">刪除這個專案？</string>
+    <string name="projects_delete_message">“%1$s”將從專案資料夾中移除，且無法復原。</string>
+    <string name="projects_read_failed">無法讀取“%1$s”。</string>
+    <string name="projects_cloned">已複製為“%1$s”。</string>
+    <string name="projects_exported">已匯出到 %1$s。</string>
+    <string name="projects_export_failed">匯出失敗：%1$s</string>
+
+    <!-- ===================== Editor screen (EditorScreen.kt) ===================== -->
+
+    <string name="editor_layer_deleted">已刪除圖層</string>
+    <string name="editor_undo">復原</string>
+    <string name="editor_redo">重做</string>
+    <string name="editor_cancel">取消</string>
+
+    <string name="editor_layer_background">背景</string>
+    <string name="editor_shape_frame">背景</string>
+    <string name="editor_add_layer">新增圖層</string>
+    <string name="editor_save_project">儲存專案</string>
+    <string name="editor_more">更多</string>
+    <string name="editor_node_graph">節點圖</string>
+    <string name="editor_canvas_menu">畫布…</string>
+    <string name="editor_project_folder">專案資料夾</string>
+    <string name="editor_export_mp4">匯出 MP4</string>
+    <string name="editor_fit_frame">符合畫面</string>
+    <string name="editor_fill_frame">填滿畫面</string>
+    <string name="editor_open_failed">檔案未能開啟，已新增專案</string>
+    <string name="editor_unsaved_title">有未儲存的變更</string>
+    <string name="editor_unsaved_message">離開前要儲存專案嗎？</string>
+    <string name="editor_unsaved_save_exit">儲存並結束</string>
+    <string name="editor_unsaved_discard">不儲存</string>
+    <string name="editor_preview_gpu_unavailable">GPU 通道不可用</string>
+    <string name="editor_preview_gpu_unavailable_hint">裝置拒絕了渲染表面——請查看“診斷”</string>
+    <string name="editor_preview_empty">空畫面</string>
+    <string name="editor_preview_empty_hint">在“媒體”中新增形狀、照片或文字</string>
+    <string name="editor_transport_start">跳到開頭</string>
+    <string name="editor_transport_pause">暫停</string>
+    <string name="editor_transport_play">播放</string>
+    <string name="editor_transport_end">跳到結尾</string>
+    <string name="editor_video_unreadable">無法讀取該影片——剪輯始終沒有開啟</string>
+    <string name="editor_timeline_empty">  時間軸為空——在“媒體”中新增圖層</string>
+
+    <!-- ===================== Saving and export (EditorScreen.kt, Export.kt) ===== -->
+
+    <string name="editor_save_encode_failed">無法儲存：專案編碼失敗</string>
+    <string name="editor_save_failed">無法儲存 %1$s：%2$s</string>
+    <string name="editor_save_unknown_error">未知錯誤</string>
+    <string name="editor_saved">已儲存 %1$s</string>
+    <string name="editor_folder_hint">資料夾：Download/%1$s</string>
+    <string name="editor_export_running">正在匯出 MP4</string>
+    <string name="editor_export_failed">匯出失敗：%1$s</string>
+    <string name="editor_export_saved">已儲存到 Download/Rumo</string>
+    <string name="editor_export_write_failed">無法寫入 Download/Rumo：%1$s</string>
+    <string name="editor_export_resolution">解析度</string>
+    <string name="editor_export_frame_rate">影格率</string>
+    <string name="editor_export_portrait_suffix">（直向）</string>
+    <string name="editor_export_summary">%1$d×%2$d @ %3$d fps</string>
+    <string name="editor_export_action">匯出</string>
+    <string name="editor_export_hide">隱藏</string>
+
+    <!-- ===================== Editor dock (EditorDock.kt) ===================== -->
+
+    <string name="editor_dock_done">完成</string>
+
+    <!-- ===================== Canvas dialog (CanvasDialog.kt) ===================== -->
+
+    <string name="editor_canvas_title">畫布</string>
+    <string name="editor_canvas_hint">專案合成的畫面。預設與匯出提供的清單相同；數值可以自由填寫。</string>
+    <string name="editor_canvas_width">寬度</string>
+    <string name="editor_canvas_height">高度</string>
+    <string name="editor_canvas_background">背景</string>
+    <string name="editor_canvas_background_colour">背景顏色</string>
+    <string name="editor_canvas_range">寬度和高度必須在 %1$d 到 %2$d 之間。</string>
+    <string name="editor_canvas_apply">套用</string>
+
+    <!-- ===================== Render diagnostics ===================== -->
+
+    <string name="editor_diag_path_unknown">未知</string>
+    <string name="editor_diag_no_gpu">沒有 GPU 裝置</string>
+    <string name="editor_diag_pill_surface">螢幕: %1$s</string>
+    <string name="editor_diag_pill_offscreen">離屏: %1$s</string>
+    <string name="editor_diag_layer_status">圖層狀態</string>
+    <string name="editor_diag_unavailable">原生診斷不可用。</string>
+    <string name="editor_diag_rejected_effects">被拒絕的效果</string>
+    <string name="editor_diag_log">日誌</string>
+    <string name="editor_diag_empty">還沒有記錄診斷資訊</string>
+    <string name="editor_diag_empty_hint">本次工作階段沒有寫入任何日誌。</string>
+    <string name="editor_diag_refresh">重新整理</string>
+    <string name="editor_diag_clip_label">rumo 渲染診斷</string>
+    <string name="editor_diag_copied">已複製診斷資訊</string>
+    <string name="editor_diag_copy">複製</string>
+    <string name="editor_diag_clear">清除</string>
+
+    <!-- Written into the project's reference folder as README.txt, once, when the
+         folder is created. %1$s is the folder name. -->
+
+    <string name="editor_assets_readme">“%1$s” — Rumo 專案的素材資料夾。\n\n把專案素材放在這裡：圖片、影片、聲音。\nRumo 和 Rumi 助手會從這裡讀取檔案：可以直接在對話中\n指定檔案名稱，匯入後它會作為圖層加入專案。\n\n該資料夾位於應用程式之外，因此重新安裝 Rumo 不會刪除它。\n這個檔案用於建立資料夾本身——無需刪除。\n</string>
+
+    <!-- ===================== Panels: shared ==================================== -->
+
+    <string name="panel_add">新增</string>
+    <string name="panel_ok">確定</string>
+    <string name="panel_cancel">取消</string>
+    <string name="panel_delete">刪除</string>
+    <string name="panel_hide">隱藏</string>
+    <string name="panel_show">顯示</string>
+    <string name="panel_lock">鎖定</string>
+    <string name="panel_unlock">解鎖</string>
+    <string name="panel_rename">重新命名</string>
+    <string name="panel_rename_title">重新命名圖層</string>
+    <string name="panel_rename_name">名稱</string>
+    <string name="panel_off">關閉</string>
+    <string name="panel_control_reset">重設 %1$s</string>
+    <string name="panel_add_layer">新增圖層</string>
+
+    <!-- Spoken by a screen reader for the kind mark; LayerKindUi.name is the
+         enum constant and is not a word. -->
+
+    <string name="panel_kind_shape">形狀</string>
+    <string name="panel_kind_text">文字</string>
+    <string name="panel_kind_media">媒體</string>
+    <string name="panel_kind_audio">音訊</string>
+
+    <string name="panel_layers">圖層</string>
+    <string name="panel_properties">屬性</string>
+    <string name="panel_media">媒體</string>
+    <string name="panel_audio">音訊</string>
+    <string name="panel_fonts">字型</string>
+
+    <!-- ===================== Panels: layers (LayersPanel.kt) =================== -->
+
+    <plurals name="panel_layers_subtitle">
+        <item quantity="other">%1$d 個圖層 · 第一列最先繪製</item>
+    </plurals>
+    <string name="panel_layers_empty">空圖層堆疊</string>
+    <string name="panel_layers_empty_hint">在“媒體”中新增形狀、照片或文字。</string>
+    <string name="panel_layers_tris">%1$d 個三角面</string>
+    <plurals name="panel_layers_keys">
+        <item quantity="other">%1$d 個關鍵影格</item>
+    </plurals>
+    <string name="panel_layers_hidden">已隱藏</string>
+    <string name="panel_layers_locked">已鎖定</string>
+    <string name="panel_layers_change_shape">更換形狀</string>
+    <string name="panel_layers_current_shape">目前形狀</string>
+    <string name="panel_layers_reorder">重新排序</string>
+    <string name="panel_layers_menu">圖層選單</string>
+
+    <!-- ===================== Panels: audio (AudioPanel.kt) ===================== -->
+
+    <string name="panel_audio_subtitle">%1$d/%2$d 條軌道已接入引擎</string>
+    <string name="panel_pause_playback">暫停播放</string>
+    <string name="panel_resume_playback">繼續播放</string>
+    <string name="panel_audio_import">匯入音訊</string>
+    <string name="panel_audio_playhead_playing">播放頭 %1$s · 正在播放</string>
+    <string name="panel_audio_playhead_paused">播放頭 %1$s · 已暫停</string>
+    <string name="panel_audio_empty">沒有音訊</string>
+    <string name="panel_audio_empty_hint">第一條接入的軌道會成為播放的主時鐘。</string>
+    <string name="panel_audio_decoded">已解碼 · %1$s</string>
+    <string name="panel_audio_no_player">無播放器 · %1$s</string>
+    <string name="panel_audio_seek">將軌道定位到播放頭</string>
+
+    <!-- ===================== Panels: fonts (FontsPanel.kt) ===================== -->
+
+    <string name="panel_fonts_none">尚未安裝</string>
+    <string name="panel_fonts_installed">已安裝 %1$d 個</string>
+    <string name="panel_fonts_select_text">請先選擇文字圖層再套用字型——字型只用於文字。</string>
+    <string name="panel_fonts_selected_uses">所選文字使用 %1$s。</string>
+    <string name="panel_font_builtin">內建等寬字型</string>
+    <string name="panel_fonts_always_available">始終可用</string>
+    <string name="panel_fonts_empty">沒有安裝字型</string>
+    <string name="panel_fonts_empty_hint">字型來自“商店”分頁——在那裡安裝後會帶著即時預覽出現在這裡。</string>
+    <string name="panel_fonts_license_installed">已安裝</string>
+    <string name="panel_fonts_in_use">使用中</string>
+    <string name="panel_fonts_options">字型操作</string>
+
+    <!-- ===================== Panels: properties (InspectorPanel.kt) ============= -->
+
+    <string name="panel_inspector_font">字型</string>
+    <string name="panel_inspector_back_builtin">返回內建字型</string>
+    <string name="panel_inspector_no_fonts">還沒有安裝字型，“商店”分頁可以下載。</string>
+    <string name="panel_inspector_empty">未選取任何內容</string>
+    <string name="panel_inspector_empty_hint">輕觸時間軸上的片段、素材庫中的圖塊或圖層列。</string>
+    <string name="panel_inspector_locked">%1$s · 已鎖定</string>
+    <string name="panel_inspector_show_pipeline">顯示管線</string>
+    <string name="panel_inspector_section_text">文字</string>
+    <string name="panel_inspector_layer_text">圖層文字</string>
+    <string name="panel_inspector_weight">字重</string>
+    <string name="panel_weight_thin">極細</string>
+    <string name="panel_weight_extra_light">特細</string>
+    <string name="panel_weight_light">細體</string>
+    <string name="panel_weight_regular">標準</string>
+    <string name="panel_weight_medium">中等</string>
+    <string name="panel_weight_semi_bold">半粗</string>
+    <string name="panel_weight_bold">粗體</string>
+    <string name="panel_weight_extra_bold">特粗</string>
+    <string name="panel_weight_black">黑體</string>
+    <string name="panel_inspector_axis">軸</string>
+    <string name="panel_inspector_section_outline">外框</string>
+    <string name="panel_inspector_thickness">粗細</string>
+    <string name="panel_inspector_outline_colour">外框顏色</string>
+    <string name="panel_inspector_choose_outline_colour">選擇外框顏色</string>
+    <string name="panel_inspector_section_transform">變換</string>
+    <string name="panel_inspector_offset_x">X 位移</string>
+    <string name="panel_inspector_offset_y">Y 位移</string>
+    <string name="panel_inspector_rotation">旋轉</string>
+    <string name="panel_inspector_section_appearance">外觀</string>
+    <string name="panel_inspector_opacity">不透明度</string>
+    <string name="panel_inspector_colour">顏色</string>
+    <string name="panel_inspector_choose_colour">選擇圖層顏色</string>
+    <string name="panel_inspector_layer_colour">圖層顏色</string>
+    <string name="panel_inspector_section_timing">時長</string>
+    <string name="panel_inspector_clip_length">片段長度</string>
+    <string name="panel_inspector_drives_length">決定專案長度 · 播放頭 %1$s</string>
+    <string name="panel_effects">效果</string>
+    <string name="panel_inspector_no_gain">引擎沒有增益級</string>
+    <string name="panel_inspector_file_linked">已連結檔案</string>
+    <string name="panel_inspector_no_file">無檔案</string>
+    <string name="panel_inspector_remove_key">刪除關鍵影格</string>
+    <string name="panel_inspector_add_key">新增關鍵影格</string>
+
+    <!-- ===================== Panels: media (MediaPanel.kt) ====================== -->
+
+    <string name="panel_media_tab_shapes">形狀</string>
+    <string name="panel_media_tab_photos">照片</string>
+    <string name="panel_media_tab_svg">SVG</string>
+    <string name="panel_media_tab_text">文字</string>
+    <plurals name="panel_media_shapes">
+        <item quantity="other">%1$d 個形狀</item>
+    </plurals>
+    <plurals name="panel_media_photos">
+        <item quantity="other">%1$d 張照片</item>
+    </plurals>
+    <plurals name="panel_media_svg">
+        <item quantity="other">%1$d 個 SVG</item>
+    </plurals>
+    <plurals name="panel_media_audio">
+        <item quantity="other">%1$d 個音訊</item>
+    </plurals>
+    <string name="panel_media_import_photo">匯入照片</string>
+    <string name="panel_media_import_video">匯入影片</string>
+    <string name="panel_media_photos_empty">還沒有照片</string>
+    <string name="panel_media_photos_empty_hint">匯入照片——它會作為片段出現在時間軸上。</string>
+    <string name="panel_media_photo_meta">照片 · %1$s</string>
+    <string name="panel_media_import_svg">匯入 SVG</string>
+    <string name="panel_media_svg_empty">還沒有 SVG</string>
+    <string name="panel_media_svg_empty_hint">匯入 .svg 檔案——它會被複製到專案資料夾，並作為向量幾何繪製。</string>
+    <string name="panel_media_svg_meta">SVG · 向量</string>
+    <string name="panel_media_text_meta">文字 · 在“屬性”中編輯</string>
+    <string name="panel_media_new_text">新增文字圖層</string>
+    <string name="panel_media_tris">%1$d 個三角面</string>
+    <string name="panel_media_svg_failed">SVG 匯入失敗</string>
+    <string name="panel_media_svg_lossy_title">SVG 用到了向量無法繪製的內容</string>
+    <string name="panel_media_svg_lossy_message">“%1$s”用到了 %2$d 個向量渲染器會跳過的元素（圖樣、遮罩、剪裁路徑、濾鏡、文字）。改為繪製成圖片可以全部保留——圖片是一般圖像圖層，放大會變模糊。</string>
+    <string name="panel_media_svg_refused_title">無法將 SVG 繪製為向量</string>
+    <string name="panel_media_svg_refused_message">向量渲染器拒絕了“%1$s”。請改為繪製成圖片：整份文件都會渲染，但會變成一般圖像圖層，放大會變模糊。</string>
+    <string name="panel_media_svg_refused_message_reason">向量渲染器拒絕了“%1$s”（%2$s）。請改為繪製成圖片：整份文件都會渲染，但會變成一般圖像圖層，放大會變模糊。</string>
+    <string name="panel_media_svg_raster">繪製成圖片</string>
+    <string name="panel_media_svg_vector">繪製為向量</string>
+
+    <!-- ===================== Panels: effects (EffectsPanel.kt) ================== -->
+
+    <string name="panel_effects_reorder">調整效果順序</string>
+    <string name="panel_effects_unavailable">不可用</string>
+    <string name="panel_effects_actions">效果操作</string>
+    <string name="panel_effects_chain">效果鏈</string>
+    <string name="panel_effects_add">新增效果</string>
+    <string name="panel_effects_no_catalogue">引擎未提供效果目錄</string>
+    <string name="panel_effects_empty">沒有效果</string>
+    <string name="panel_effects_empty_hint">新增一個：效果依此順序由上而下執行。</string>
+    <string name="panel_effects_unknown">未知效果——沒有參數</string>
+    <string name="panel_effects_no_params">該效果沒有參數</string>
+    <string name="panel_effects_preview_on">在 %1$s 上預覽</string>
+    <string name="panel_effects_no_preview_layer">沒有可見圖層可供預覽</string>
+    <string name="panel_effects_search">搜尋效果</string>
+    <string name="panel_effects_no_catalogue_long">引擎未提供效果目錄。</string>
+    <string name="panel_effects_shop">商店</string>
+    <string name="panel_effects_add_to_layer">新增到圖層</string>
+    <string name="panel_effects_choose">選擇 %1$s</string>
+    <string name="panel_effects_alpha">透明度</string>
+    <string name="panel_effects_no_choices">沒有選項</string>
+    <string name="panel_effects_value">數值</string>
+    <string name="panel_effects_set">設定</string>
+    <string name="panel_effects_hue">色相</string>
+    <string name="panel_effects_colour">顏色 %1$s</string>
+    <string name="panel_effects_done">完成</string>
+
+    <!-- The engine ships its effect names, parameter labels and choice values as
+         English `&'static str`, and those strings are also the identity it acts on:
+         an id addresses a built-in effect, a (effect id, parameter key) pair
+         addresses a parameter, a choice value comes back as its index. EffectsPanel.kt
+         maps that identity to these strings at the display site; a miss falls back to
+         the engine's own text, so an effect added to rumo-core is still shown, just
+         untranslated. Nothing here is ever sent to the engine.
+         The English below is deliberately identical to the engine's own spelling —
+         including "Colour Tune" and "Reorient Sphere" — so English reads exactly as
+         it did before this block existed. Only values-ru/ and values-zh/ differ. -->
+
+    <!-- The engine ships its effect names, parameter labels and choice values as
+         English `&'static str`, and those strings are also the identity it acts on:
+         an id addresses a built-in effect, a (effect id, parameter key) pair
+         addresses a parameter, a choice value comes back as its index. EffectsPanel.kt
+         maps that identity to these strings at the display site; a miss falls back to
+         the engine's own text, so an effect added to rumo-core is still shown, just
+         untranslated. Nothing here is ever sent to the engine.
+         The English below is deliberately identical to the engine's own spelling —
+         including "Colour Tune" and "Reorient Sphere" — so English reads exactly as
+         it did before this block existed. Only values-ru/ and values-zh/ differ. -->
+
+    <string name="effect_name_blur">模糊</string>
+    <string name="effect_name_color_tune">調色</string>
+    <string name="effect_name_threshold">閾值</string>
+    <string name="effect_name_chroma_key">色度鍵</string>
+    <string name="effect_name_copy_background">背景填充</string>
+    <string name="effect_name_pixelate">像素化</string>
+    <string name="effect_name_sphere360">旋轉球面</string>
+    <string name="effect_name_drop_shadow">陰影</string>
+    <string name="effect_name_inner_shadow">內陰影</string>
+    <string name="effect_name_glow">發光</string>
+
+    <string name="effect_param_blur_mode">模式</string>
+    <string name="effect_param_blur_radius">半徑</string>
+    <string name="effect_param_blur_angle">角度</string>
+    <string name="effect_param_blur_downscale">降取樣</string>
+    <string name="effect_param_color_tune_hue">色相</string>
+    <string name="effect_param_color_tune_chroma">色度</string>
+    <string name="effect_param_color_tune_lightness">明度</string>
+    <string name="effect_param_color_tune_brightness">亮度</string>
+    <string name="effect_param_color_tune_contrast">對比度</string>
+    <string name="effect_param_color_tune_saturation">飽和度</string>
+    <string name="effect_param_threshold_level">閾值色階</string>
+    <string name="effect_param_threshold_softness">柔和度</string>
+    <string name="effect_param_threshold_mode">模式</string>
+    <string name="effect_param_chroma_key_key">鍵控顏色</string>
+    <string name="effect_param_chroma_key_similarity">相似度</string>
+    <string name="effect_param_chroma_key_softness">柔和度</string>
+    <string name="effect_param_chroma_key_spill">溢色抑制</string>
+    <string name="effect_param_copy_background_mode">模式</string>
+    <string name="effect_param_copy_background_color">顏色</string>
+    <string name="effect_param_copy_background_tolerance">容差</string>
+    <string name="effect_param_copy_background_feather">羽化</string>
+    <string name="effect_param_pixelate_size">色塊大小</string>
+    <string name="effect_param_pixelate_shape">形狀</string>
+    <string name="effect_param_sphere360_radius">半徑</string>
+    <string name="effect_param_sphere360_yaw">水平旋轉</string>
+    <string name="effect_param_sphere360_pitch">垂直旋轉</string>
+    <string name="effect_param_sphere360_fov">視野</string>
+    <string name="effect_param_drop_shadow_offset_x">X 位移</string>
+    <string name="effect_param_drop_shadow_offset_y">Y 位移</string>
+    <string name="effect_param_drop_shadow_blur">模糊</string>
+    <string name="effect_param_drop_shadow_spread">擴展</string>
+    <string name="effect_param_drop_shadow_color">顏色</string>
+    <string name="effect_param_drop_shadow_opacity">不透明度</string>
+    <string name="effect_param_inner_shadow_offset_x">X 位移</string>
+    <string name="effect_param_inner_shadow_offset_y">Y 位移</string>
+    <string name="effect_param_inner_shadow_blur">模糊</string>
+    <string name="effect_param_inner_shadow_spread">擴展</string>
+    <string name="effect_param_inner_shadow_color">顏色</string>
+    <string name="effect_param_inner_shadow_opacity">不透明度</string>
+    <string name="effect_param_glow_threshold">閾值</string>
+    <string name="effect_param_glow_radius">半徑</string>
+    <string name="effect_param_glow_intensity">強度</string>
+    <string name="effect_param_glow_color">色調</string>
+    <string name="effect_param_glow_tint">色調數量</string>
+
+    <string name="effect_choice_gaussian">高斯</string>
+    <string name="effect_choice_box">方框</string>
+    <string name="effect_choice_directional">定向</string>
+    <string name="effect_choice_mask">遮罩</string>
+    <string name="effect_choice_luma">亮度</string>
+    <string name="effect_choice_alpha">透明度</string>
+    <string name="effect_choice_chroma">色度</string>
+    <string name="effect_choice_black">黑色</string>
+    <string name="effect_choice_white">白色</string>
+    <string name="effect_choice_color">顏色</string>
+    <string name="effect_choice_square">正方形</string>
+    <string name="effect_choice_hex">六邊形</string>
+
+    <!-- ===================== Panels: nodes (NodesPanel.kt) ====================== -->
+
+    <string name="panel_node_source">來源</string>
+    <string name="panel_node_transform">變換</string>
+    <string name="panel_node_appearance">外觀</string>
+    <string name="panel_node_transition">轉場</string>
+    <string name="panel_node_timing">時長</string>
+    <string name="panel_node_output">輸出</string>
+    <plurals name="panel_nodes_params">
+        <item quantity="other">%1$d 個參數</item>
+    </plurals>
+    <string name="panel_nodes_cross_fade">交叉淡化</string>
+    <string name="panel_nodes_fade_in">淡入</string>
+    <string name="panel_nodes_not_set">未設定</string>
+    <string name="panel_nodes_output">匯出合成器 · %1$s</string>
+    <plurals name="panel_nodes_keys">
+        <item quantity="other">%1$d 個關鍵影格</item>
+    </plurals>
+    <string name="panel_nodes_no_cross_fade">沒有交叉淡化</string>
+    <string name="panel_nodes_set_cross_fade">設定交叉淡化</string>
+    <string name="panel_nodes_cross_fade_hint">讓該圖層在下方圖層之上淡入。</string>
+    <string name="panel_nodes_start">起點</string>
+    <string name="panel_nodes_duration">時長</string>
+    <string name="panel_nodes_with_below">與下方圖層</string>
+    <string name="panel_nodes_enabled">已啟用</string>
+    <string name="panel_nodes_remove">移除</string>
+    <string name="panel_nodes_disable">停用</string>
+    <string name="panel_nodes_enable">啟用</string>
+    <string name="panel_nodes_locked">圖層已鎖定——請在“圖層”中解鎖後再移動。</string>
+    <plurals name="panel_nodes_rotation_keys">
+        <item quantity="other">%1$d 個旋轉關鍵影格</item>
+    </plurals>
+    <string name="panel_nodes_scene">512×288 場景</string>
+    <string name="panel_nodes_surface">螢幕</string>
+    <string name="panel_nodes_bitmap">點陣圖</string>
+    <string name="panel_nodes_add_effect">新增效果節點</string>
+    <string name="panel_nodes_subtitle">%1$s · 拖曳可移動，輕觸查看參數</string>
+    <string name="panel_nodes_no_layer">沒有圖層</string>
+    <string name="panel_nodes_reset">重設</string>
+    <string name="panel_nodes_close">關閉節點圖</string>
+
+</resources>

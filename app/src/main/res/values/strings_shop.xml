@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The shop: the section switcher, the repository browser and the Google Fonts
+  list. Only text the user reads is here. Comparison keys, repository topics,
+  catalogue category tokens and log messages stay in the data layer on purpose —
+  translating one of those would break a comparison without a compile error.
+
+  The one coupling worth naming: `ShopUpdates.NO_RELEASE` is compared against
+  the literal `GitHubApi.fail("no suitable release")` produces. Neither side can
+  move into a resource.
+-->
+<resources>
+
+    <!-- Shop screen: the title bar, the section switcher and its subtitles. -->
+    <string name="shop_title">Shop</string>
+    <string name="shop_section_fonts">Fonts</string>
+    <string name="shop_section_templates">Templates</string>
+    <string name="shop_section_effects">Effects</string>
+    <string name="shop_settings">Shop settings</string>
+    <string name="shop_updates_available"> Updates available</string>
+    <!-- %1$d — how many updates are waiting. -->
+    <plurals name="shop_updates_count">
+        <item quantity="one">%1$d update</item>
+        <item quantity="other">%1$d updates</item>
+    </plurals>
+    <!-- %1$s — name, %2$s — installed version, %3$s — available version. -->
+    <string name="shop_update_line">%1$s: %2$s → %3$s</string>
+
+    <!-- Shop settings dialog. -->
+    <string name="shop_settings_token_hint">Fonts come from Google Fonts and need no token. Templates and effects are read through the GitHub API, where a token raises the limit from 60 requests an hour to 5000.</string>
+    <string name="shop_settings_token_label">GitHub token</string>
+    <string name="shop_settings_check_updates">Check for updates</string>
+    <string name="shop_settings_preview_fonts">Preview fonts in the list</string>
+    <string name="shop_settings_show_builtins">Show the built-in templates</string>
+    <string name="shop_settings_interval">Hours between update checks</string>
+    <!-- %1$s — comma-separated family names. -->
+    <string name="shop_settings_installed_fonts">Installed fonts: %1$s</string>
+    <string name="shop_cancel">Cancel</string>
+
+    <!-- Shop screen: the subtitle under the title. -->
+    <!-- %1$d — how many families the catalogue holds. -->
+    <plurals name="shop_fonts_subtitle_none">
+        <item quantity="one">%1$d family · nothing installed</item>
+        <item quantity="other">%1$d families · nothing installed</item>
+    </plurals>
+    <!-- %1$d — families in the catalogue, %2$d — installed. -->
+    <plurals name="shop_fonts_subtitle_installed">
+        <item quantity="one">%1$d family · %2$d installed</item>
+        <item quantity="other">%1$d families · %2$d installed</item>
+    </plurals>
+    <string name="shop_fonts_subtitle_loading">Reading the Google Fonts catalogue…</string>
+
+    <!-- Repository browser: subtitles and list chrome. -->
+    <string name="shop_repos_subtitle_no_token">a GitHub token is required</string>
+    <string name="shop_repos_subtitle_loading">Checking repositories…</string>
+    <!-- %1$s — the repository topic, an API value that is never translated. -->
+    <string name="shop_repos_subtitle_none">no repository carries %1$s yet</string>
+    <!-- %1$d — how many repositories the search returned. -->
+    <plurals name="shop_repos_subtitle_count">
+        <item quantity="one">%1$d repository</item>
+        <item quantity="other">%1$d repositories</item>
+    </plurals>
+    <string name="shop_repos_filter">Filter repositories</string>
+    <string name="shop_repos_builtin">Built-in</string>
+    <string name="shop_repos_token_title">GitHub token required</string>
+    <string name="shop_repos_token_message">Templates and effects are read through the GitHub API. Without a token GitHub allows 60 requests an hour, which is not enough to check a list of repositories. Fonts do not need it.</string>
+    <string name="shop_repos_token_action">Add a token</string>
+    <string name="shop_repos_checking_title">Checking repositories</string>
+    <string name="shop_repos_checking_message">Every repository is verified before it appears here.</string>
+    <string name="shop_repos_empty_title">Nothing published yet</string>
+    <!-- %1$s — the repository topic, an API value that is never translated. -->
+    <string name="shop_repos_empty_message">A repository shows up here when it carries the %1$s topic, a manifest, a verification file and a webp preview.</string>
+    <string name="shop_repos_from_github">From GitHub</string>
+    <string name="shop_repos_refresh">Refresh</string>
+    <!-- %1$d — how many installable items the repository holds. -->
+    <plurals name="shop_repos_items_templates">
+        <item quantity="one">%1$d template</item>
+        <item quantity="other">%1$d templates</item>
+    </plurals>
+    <plurals name="shop_repos_items_effects">
+        <item quantity="one">%1$d effect</item>
+        <item quantity="other">%1$d effects</item>
+    </plurals>
+    <string name="shop_repos_back">Back to the list</string>
+    <string name="shop_repos_no_licence">no licence</string>
+    <string name="shop_repos_reading_title">Reading the repository</string>
+    <string name="shop_repos_reading_message">Manifest, verification file and file list.</string>
+    <string name="shop_repos_contents">Contents</string>
+    <string name="shop_installed">Installed</string>
+    <string name="shop_repos_install">Install</string>
+    <string name="shop_repos_nothing_title">Nothing installable</string>
+    <string name="shop_repos_nothing_message">The repository did not pass verification, so nothing is offered.</string>
+    <string name="shop_repos_check_token">Check the token</string>
+    <string name="shop_repos_open_on_github"> Open on GitHub</string>
+
+    <!-- Repository browser: install failures. These are shown to the user, so
+         they are translated; the reasons `RepoRules` produces are not (see the
+         report — they are a design-layer value without a `Context`). -->
+    <string name="shop_repos_error_no_response">GitHub did not respond</string>
+    <string name="shop_repos_error_validation">the repository failed validation</string>
+    <!-- %1$s — item name. -->
+    <string name="shop_install_download_failed">could not download %1$s</string>
+    <string name="shop_install_not_template">\"%1$s\" was not parsed as a template</string>
+    <string name="shop_install_save_failed">could not save \"%1$s\"</string>
+    <string name="shop_install_not_effect">\"%1$s\" was not parsed as an effect</string>
+    <string name="shop_install_engine_rejected">the engine rejected the effect \"%1$s\"</string>
+
+    <!-- Fonts: search, filters and the catalogue list. -->
+    <string name="shop_fonts_search">Search fonts</string>
+    <string name="shop_fonts_filter_all">All</string>
+    <string name="shop_fonts_filter_sans">Sans</string>
+    <string name="shop_fonts_filter_serif">Serif</string>
+    <string name="shop_fonts_filter_display">Display</string>
+    <string name="shop_fonts_filter_script">Script</string>
+    <string name="shop_fonts_filter_mono">Mono</string>
+    <string name="shop_fonts_filter_latin">Latin</string>
+    <!-- %1$s — the family's licence. -->
+    <string name="shop_fonts_default_for_new">Default for new text · %1$s</string>
+    <string name="shop_fonts_tap_to_default">Tap to make default · %1$s</string>
+    <!-- A brand name; the same in every locale, so it is not translated. -->
+    <string name="shop_fonts_catalog_header" translatable="false">Google Fonts</string>
+    <string name="shop_fonts_empty_loading_title">Loading the catalogue</string>
+    <string name="shop_fonts_empty_title">Nothing found</string>
+    <string name="shop_fonts_empty_loading_message">Google Fonts is being read; this happens once and is cached.</string>
+    <string name="shop_fonts_empty_message">No family matches this search and filter.</string>
+    <string name="shop_fonts_clear_filters">Clear filters</string>
+    <string name="shop_fonts_loading_preview"> · loading preview</string>
+    <string name="shop_fonts_download_cd">Download</string>
+    <string name="shop_fonts_preview_unavailable">Preview unavailable</string>
+    <string name="shop_fonts_preview_loading">Loading preview…</string>
+    <string name="shop_fonts_italic"> · italic</string>
+    <!-- %1$s — comma-separated subset names. -->
+    <string name="shop_fonts_subsets">Subsets: %1$s</string>
+    <!-- %1$s — file name, %2$s — bucket, %3$s — licence. -->
+    <string name="shop_fonts_file">File: %1$s (%2$s, %3$s)</string>
+    <string name="shop_fonts_licence">Licence</string>
+    <string name="shop_fonts_install"> Install</string>
+    <string name="shop_fonts_installing"> Installing…</string>
+    <string name="shop_fonts_default_button">Default for new text</string>
+    <string name="shop_fonts_make_default">Make default</string>
+    <string name="shop_fonts_remove">Remove</string>
+    <!-- %1$d — the preview limit in megabytes. -->
+    <string name="shop_fonts_preview_too_large">The preview is not shown: the file is bigger than %1$d MB. It can still be installed — the download has no such limit.</string>
+    <string name="shop_fonts_install_pending">Installation will become available once the face is loaded.</string>
+
+    <!-- Fonts: the catalogue categories, shown as a chip caption and as a row
+         label. The tokens in `GoogleFonts` (`"sans serif"`, …) are comparison
+         keys and stay untranslated; only these captions are localized. -->
+    <string name="shop_fonts_category_sans_serif">Sans serif</string>
+    <string name="shop_fonts_category_serif">Serif</string>
+    <string name="shop_fonts_category_display">Display</string>
+    <string name="shop_fonts_category_handwriting">Handwriting</string>
+    <string name="shop_fonts_category_monospace">Monospace</string>
+
+    <!-- Fonts: load and install failures. -->
+    <string name="shop_fonts_catalogue_unavailable">The Google Fonts catalogue is unavailable</string>
+    <!-- %1$s — the family name. -->
+    <string name="shop_fonts_install_failed">Could not install \"%1$s\"</string>
+
+</resources>

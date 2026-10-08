@@ -1,0 +1,61 @@
+[package]
+name = "rumo_render"
+version = "0.0.1"
+edition = "2024"
+license = "Apache-2.0"
+
+[dependencies]
+bytemuck = "=1.25.2"
+cosmic-text = { version = "=0.19.0", default-features = false, features = ["std", "swash", "monospace_fallback"] }
+# Reached directly only to read a face's `fvar` axes and to build a scaler
+# with more than the `wght` axis cosmic-text applies. Same 0.2.x cosmic-text
+# resolves, so this adds no second copy of the crate.
+swash = "0.2"
+jni = "=0.22.4"
+kurbo = "=0.13.1"
+lyon_tessellation = "=1.0.22"
+pollster = "=0.4.0"
+# Effect chains are part of the document model (`rumo_core::effect`), and the
+# compositor has to know each effect's parameter slots, pass list and downscale
+# rules in order to run them. `rumo_core` is dependency-light (serde/postcard/
+# uuid) and depends on nothing in this workspace, so this adds no cycle.
+rumo_core = { path = "../rumo-core" }
+# SVG parsing for the real (vector, non-rasterising) SVG renderer in `svg.rs`.
+# Pinned, and with default features off: that drops the `text` feature
+# (fontdb/harfrust/skrifa), `svgz` (flate2), `system-fonts`, `memmap-fonts`
+# and `writer`. We have our own text engine and want no extra pure-Rust or C
+# weight here. `usvg` is `Apache-2.0 OR MIT`.
+usvg = { version = "=0.48.1", default-features = false }
+# Legacy SVG fallback (`svg_legacy.rs`): rasterise a document that the vector
+# path above refuses. `text` + `raster-images` + `svgz` are required precisely
+# because the lean build would refuse the documents this path exists for;
+# `system-fonts`/`memmap-fonts` stay off (they want fontconfig, absent on
+# Android). `resvg` is `Apache-2.0 OR MIT` and pure Rust. It re-exports the
+# `usvg`/`tiny-skia` it was built against, and its `text` feature turns on the
+# same `usvg/text`, so the font database is available to `svg_legacy.rs`.
+resvg = { version = "=0.48.1", default-features = false, features = ["text", "raster-images", "svgz"] }
+# wgpu's own WGSL front end, pinned to the version wgpu 30.0.1 bundles. Used to
+# validate every effect module — and to assert that each module's `struct
+# Params` matches `rumo_core::effect` slot order — before a shader module is
+# handed to the driver, and again from unit tests on machines with no GPU.
+naga = { version = "=30.0.1", default-features = false, features = ["wgsl-in"] }
+# Already a workspace dependency (`rumo_core` uses it): the diagnostics
+# report is handed to the UI as JSON, and hand-rolling an escaper for
+# arbitrary driver error strings is a needless correctness risk.
+serde_json = "=1.0.151"
+wgpu = "=30.0.1"
+
+# Android-only surface bindings (pure FFI, no vendored C): ANativeWindow
+# handle for wgpu Surface creation. Target-gated so host builds and unit
+# tests never link libandroid.
+[target.'cfg(target_os = "android")'.dependencies]
+ndk = { version = "=0.9.0", default-features = false, features = ["nativewindow", "api-level-33"] }
+raw-window-handle = "=0.6.2"
+
+[dev-dependencies]
+pollster = "=0.4.0"
+# Renders a composited frame to a PNG so a test failure can be *looked at*
+# instead of inferred from a number. Already in the lock (the `image` crate
+# pulls it in for `rumo-media`), so this adds no crate to the build graph, and
+# it is pure Rust — it never reaches the cdylib, only `cargo test`.
+png = "=0.18.1"

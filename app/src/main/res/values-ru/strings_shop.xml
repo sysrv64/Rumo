@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The shop: the section switcher, the repository browser and the Google Fonts
+  list. Only text the user reads is here. Comparison keys, repository topics,
+  catalogue category tokens and log messages stay in the data layer on purpose —
+  translating one of those would break a comparison without a compile error.
+
+  The one coupling worth naming: `ShopUpdates.NO_RELEASE` is compared against
+  the literal `GitHubApi.fail("no suitable release")` produces. Neither side can
+  move into a resource.
+-->
+<resources>
+
+    <!-- Shop screen: the title bar, the section switcher and its subtitles. -->
+    <string name="shop_title">Магазин</string>
+    <string name="shop_section_fonts">Шрифты</string>
+    <string name="shop_section_templates">Шаблоны</string>
+    <string name="shop_section_effects">Эффекты</string>
+    <string name="shop_settings">Настройки магазина</string>
+    <string name="shop_updates_available"> Доступны обновления</string>
+    <plurals name="shop_updates_count">
+        <item quantity="one">%1$d обновление</item>
+        <item quantity="few">%1$d обновления</item>
+        <item quantity="many">%1$d обновлений</item>
+        <item quantity="other">%1$d обновлений</item>
+    </plurals>
+    <string name="shop_update_line">%1$s: %2$s → %3$s</string>
+
+    <!-- Shop settings dialog. -->
+    <string name="shop_settings_token_hint">Шрифты берутся из Google Fonts и не требуют токена. Шаблоны и эффекты читаются через API GitHub, где токен поднимает лимит с 60 запросов в час до 5000.</string>
+    <string name="shop_settings_token_label">Токен GitHub</string>
+    <string name="shop_settings_check_updates">Проверять обновления</string>
+    <string name="shop_settings_preview_fonts">Показывать шрифты в списке</string>
+    <string name="shop_settings_show_builtins">Показывать встроенные шаблоны</string>
+    <string name="shop_settings_interval">Часов между проверками обновлений</string>
+    <string name="shop_settings_installed_fonts">Установленные шрифты: %1$s</string>
+    <string name="shop_cancel">Отмена</string>
+
+    <!-- %1$d — how many families the catalogue holds. -->
+    <plurals name="shop_fonts_subtitle_none">
+        <item quantity="one">%1$d семейство · ничего не установлено</item>
+        <item quantity="few">%1$d семейства · ничего не установлено</item>
+        <item quantity="many">%1$d семейств · ничего не установлено</item>
+        <item quantity="other">%1$d семейств · ничего не установлено</item>
+    </plurals>
+    <plurals name="shop_fonts_subtitle_installed">
+        <item quantity="one">%1$d семейство · %2$d установлено</item>
+        <item quantity="few">%1$d семейства · %2$d установлено</item>
+        <item quantity="many">%1$d семейств · %2$d установлено</item>
+        <item quantity="other">%1$d семейств · %2$d установлено</item>
+    </plurals>
+    <string name="shop_fonts_subtitle_loading">Чтение каталога Google Fonts…</string>
+
+    <!-- Repository browser: subtitles and list chrome. -->
+    <string name="shop_repos_subtitle_no_token">нужен токен GitHub</string>
+    <string name="shop_repos_subtitle_loading">Проверка репозиториев…</string>
+    <string name="shop_repos_subtitle_none">пока ни один репозиторий не содержит %1$s</string>
+    <plurals name="shop_repos_subtitle_count">
+        <item quantity="one">%1$d репозиторий</item>
+        <item quantity="few">%1$d репозитория</item>
+        <item quantity="many">%1$d репозиториев</item>
+        <item quantity="other">%1$d репозиториев</item>
+    </plurals>
+    <string name="shop_repos_filter">Фильтр репозиториев</string>
+    <string name="shop_repos_builtin">Встроенные</string>
+    <string name="shop_repos_token_title">Нужен токен GitHub</string>
+    <string name="shop_repos_token_message">Шаблоны и эффекты читаются через API GitHub. Без токена GitHub разрешает 60 запросов в час — этого мало, чтобы проверить список репозиториев. Шрифтам токен не нужен.</string>
+    <string name="shop_repos_token_action">Добавить токен</string>
+    <string name="shop_repos_checking_title">Проверка репозиториев</string>
+    <string name="shop_repos_checking_message">Каждый репозиторий проверяется, прежде чем появиться здесь.</string>
+    <string name="shop_repos_empty_title">Пока ничего не опубликовано</string>
+    <string name="shop_repos_empty_message">Репозиторий появится здесь, когда у него будет тема %1$s, манифест, файл проверки и превью в webp.</string>
+    <string name="shop_repos_from_github">С GitHub</string>
+    <string name="shop_repos_refresh">Обновить</string>
+    <plurals name="shop_repos_items_templates">
+        <item quantity="one">%1$d шаблон</item>
+        <item quantity="few">%1$d шаблона</item>
+        <item quantity="many">%1$d шаблонов</item>
+        <item quantity="other">%1$d шаблонов</item>
+    </plurals>
+    <plurals name="shop_repos_items_effects">
+        <item quantity="one">%1$d эффект</item>
+        <item quantity="few">%1$d эффекта</item>
+        <item quantity="many">%1$d эффектов</item>
+        <item quantity="other">%1$d эффектов</item>
+    </plurals>
+    <string name="shop_repos_back">Назад к списку</string>
+    <string name="shop_repos_no_licence">без лицензии</string>
+    <string name="shop_repos_reading_title">Чтение репозитория</string>
+    <string name="shop_repos_reading_message">Манифест, файл проверки и список файлов.</string>
+    <string name="shop_repos_contents">Содержимое</string>
+    <string name="shop_installed">Установлено</string>
+    <string name="shop_repos_install">Установить</string>
+    <string name="shop_repos_nothing_title">Нечего устанавливать</string>
+    <string name="shop_repos_nothing_message">Репозиторий не прошёл проверку, поэтому ничего не предлагается.</string>
+    <string name="shop_repos_check_token">Проверить токен</string>
+    <string name="shop_repos_open_on_github"> Открыть на GitHub</string>
+
+    <!-- Repository browser: install failures. These are shown to the user, so
+         they are translated; the reasons `RepoRules` produces are not (see the
+         report — they are a design-layer value without a `Context`). -->
+    <string name="shop_repos_error_no_response">GitHub не ответил</string>
+    <string name="shop_repos_error_validation">репозиторий не прошёл проверку</string>
+    <string name="shop_install_download_failed">не удалось скачать %1$s</string>
+    <string name="shop_install_not_template">«%1$s» не распознан как шаблон</string>
+    <string name="shop_install_save_failed">не удалось сохранить «%1$s»</string>
+    <string name="shop_install_not_effect">«%1$s» не распознан как эффект</string>
+    <string name="shop_install_engine_rejected">движок отклонил эффект «%1$s»</string>
+
+    <!-- Fonts: search, filters and the catalogue list. -->
+    <string name="shop_fonts_search">Поиск шрифтов</string>
+    <string name="shop_fonts_filter_all">Все</string>
+    <string name="shop_fonts_filter_sans">Без засечек</string>
+    <string name="shop_fonts_filter_serif">С засечками</string>
+    <string name="shop_fonts_filter_display">Акцидентные</string>
+    <string name="shop_fonts_filter_script">Рукописные</string>
+    <string name="shop_fonts_filter_mono">Моно</string>
+    <string name="shop_fonts_filter_latin">Латиница</string>
+    <string name="shop_fonts_default_for_new">По умолчанию для нового текста · %1$s</string>
+    <string name="shop_fonts_tap_to_default">Нажмите, чтобы сделать основным · %1$s</string>
+    <string name="shop_fonts_empty_loading_title">Загрузка каталога</string>
+    <string name="shop_fonts_empty_title">Ничего не найдено</string>
+    <string name="shop_fonts_empty_loading_message">Google Fonts читается; это происходит один раз и кэшируется.</string>
+    <string name="shop_fonts_empty_message">Ни одно семейство не подходит под этот поиск и фильтр.</string>
+    <string name="shop_fonts_clear_filters">Сбросить фильтры</string>
+    <string name="shop_fonts_loading_preview"> · загрузка превью</string>
+    <string name="shop_fonts_download_cd">Скачать</string>
+    <string name="shop_fonts_preview_unavailable">Превью недоступно</string>
+    <string name="shop_fonts_preview_loading">Загрузка превью…</string>
+    <string name="shop_fonts_italic"> · курсив</string>
+    <string name="shop_fonts_subsets">Наборы: %1$s</string>
+    <string name="shop_fonts_file">Файл: %1$s (%2$s, %3$s)</string>
+    <string name="shop_fonts_licence">Лицензия</string>
+    <string name="shop_fonts_install"> Установить</string>
+    <string name="shop_fonts_installing"> Установка…</string>
+    <string name="shop_fonts_default_button">По умолчанию для нового текста</string>
+    <string name="shop_fonts_make_default">Сделать основным</string>
+    <string name="shop_fonts_remove">Удалить</string>
+    <string name="shop_fonts_preview_too_large">Превью не показано: файл больше %1$d МБ. Его всё равно можно установить — у загрузки такого ограничения нет.</string>
+    <string name="shop_fonts_install_pending">Установка станет доступна, когда начертание загрузится.</string>
+
+    <!-- Fonts: the catalogue categories, shown as a chip caption and as a row
+         label. The tokens in `GoogleFonts` (`"sans serif"`, …) are comparison
+         keys and stay untranslated; only these captions are localized. -->
+    <string name="shop_fonts_category_sans_serif">Без засечек</string>
+    <string name="shop_fonts_category_serif">С засечками</string>
+    <string name="shop_fonts_category_display">Акцидентный</string>
+    <string name="shop_fonts_category_handwriting">Рукописный</string>
+    <string name="shop_fonts_category_monospace">Моноширинный</string>
+
+    <!-- Fonts: load and install failures. -->
+    <string name="shop_fonts_catalogue_unavailable">Каталог Google Fonts недоступен</string>
+    <string name="shop_fonts_install_failed">Не удалось установить «%1$s»</string>
+
+</resources>

@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The shop: the section switcher, the repository browser and the Google Fonts
+  list. Only text the user reads is here. Comparison keys, repository topics,
+  catalogue category tokens and log messages stay in the data layer on purpose —
+  translating one of those would break a comparison without a compile error.
+
+  The one coupling worth naming: `ShopUpdates.NO_RELEASE` is compared against
+  the literal `GitHubApi.fail("no suitable release")` produces. Neither side can
+  move into a resource.
+-->
+<resources>
+
+    <!-- Shop screen: the title bar, the section switcher and its subtitles. -->
+    <string name="shop_title">商店</string>
+    <string name="shop_section_fonts">字体</string>
+    <string name="shop_section_templates">模板</string>
+    <string name="shop_section_effects">特效</string>
+    <string name="shop_settings">商店设置</string>
+    <string name="shop_updates_available"> 有可用更新</string>
+    <plurals name="shop_updates_count">
+        <item quantity="other">%1$d 个更新</item>
+    </plurals>
+    <string name="shop_update_line">%1$s：%2$s → %3$s</string>
+
+    <!-- Shop settings dialog. -->
+    <string name="shop_settings_token_hint">字体来自 Google Fonts，无需令牌。模板和特效通过 GitHub API 读取，使用令牌可将限额从每小时 60 次提升到 5000 次。</string>
+    <string name="shop_settings_token_label">GitHub 令牌</string>
+    <string name="shop_settings_check_updates">检查更新</string>
+    <string name="shop_settings_preview_fonts">在列表中预览字体</string>
+    <string name="shop_settings_show_builtins">显示内置模板</string>
+    <string name="shop_settings_interval">更新检查间隔（小时）</string>
+    <string name="shop_settings_installed_fonts">已安装字体：%1$s</string>
+    <string name="shop_cancel">取消</string>
+
+    <!-- %1$d — how many families the catalogue holds. -->
+    <plurals name="shop_fonts_subtitle_none">
+        <item quantity="other">%1$d 个字体 · 尚未安装</item>
+    </plurals>
+    <plurals name="shop_fonts_subtitle_installed">
+        <item quantity="other">%1$d 个字体 · 已安装 %2$d 个</item>
+    </plurals>
+    <string name="shop_fonts_subtitle_loading">正在读取 Google Fonts 目录…</string>
+
+    <!-- Repository browser: subtitles and list chrome. -->
+    <string name="shop_repos_subtitle_no_token">需要 GitHub 令牌</string>
+    <string name="shop_repos_subtitle_loading">正在检查仓库…</string>
+    <string name="shop_repos_subtitle_none">还没有仓库带有 %1$s 话题</string>
+    <plurals name="shop_repos_subtitle_count">
+        <item quantity="other">%1$d 个仓库</item>
+    </plurals>
+    <string name="shop_repos_filter">筛选仓库</string>
+    <string name="shop_repos_builtin">内置</string>
+    <string name="shop_repos_token_title">需要 GitHub 令牌</string>
+    <string name="shop_repos_token_message">模板和特效通过 GitHub API 读取。没有令牌时 GitHub 每小时只允许 60 次请求，不足以检查仓库列表。字体不需要令牌。</string>
+    <string name="shop_repos_token_action">添加令牌</string>
+    <string name="shop_repos_checking_title">正在检查仓库</string>
+    <string name="shop_repos_checking_message">每个仓库都会先通过验证，然后才会出现在这里。</string>
+    <string name="shop_repos_empty_title">暂无发布内容</string>
+    <string name="shop_repos_empty_message">当仓库带有 %1$s 话题、清单、验证文件和 webp 预览时，它就会出现在这里。</string>
+    <string name="shop_repos_from_github">来自 GitHub</string>
+    <string name="shop_repos_refresh">刷新</string>
+    <plurals name="shop_repos_items_templates">
+        <item quantity="other">%1$d 个模板</item>
+    </plurals>
+    <plurals name="shop_repos_items_effects">
+        <item quantity="other">%1$d 个特效</item>
+    </plurals>
+    <string name="shop_repos_back">返回列表</string>
+    <string name="shop_repos_no_licence">无许可证</string>
+    <string name="shop_repos_reading_title">正在读取仓库</string>
+    <string name="shop_repos_reading_message">清单、验证文件和文件列表。</string>
+    <string name="shop_repos_contents">内容</string>
+    <string name="shop_installed">已安装</string>
+    <string name="shop_repos_install">安装</string>
+    <string name="shop_repos_nothing_title">没有可安装的内容</string>
+    <string name="shop_repos_nothing_message">该仓库未通过验证，因此没有可提供的内容。</string>
+    <string name="shop_repos_check_token">检查令牌</string>
+    <string name="shop_repos_open_on_github"> 在 GitHub 上打开</string>
+
+    <!-- Repository browser: install failures. These are shown to the user, so
+         they are translated; the reasons `RepoRules` produces are not (see the
+         report — they are a design-layer value without a `Context`). -->
+    <string name="shop_repos_error_no_response">GitHub 没有响应</string>
+    <string name="shop_repos_error_validation">仓库未通过验证</string>
+    <string name="shop_install_download_failed">无法下载 %1$s</string>
+    <string name="shop_install_not_template">“%1$s” 无法解析为模板</string>
+    <string name="shop_install_save_failed">无法保存 “%1$s”</string>
+    <string name="shop_install_not_effect">“%1$s” 无法解析为特效</string>
+    <string name="shop_install_engine_rejected">引擎拒绝了特效 “%1$s”</string>
+
+    <!-- Fonts: search, filters and the catalogue list. -->
+    <string name="shop_fonts_search">搜索字体</string>
+    <string name="shop_fonts_filter_all">全部</string>
+    <string name="shop_fonts_filter_sans">无衬线</string>
+    <string name="shop_fonts_filter_serif">衬线</string>
+    <string name="shop_fonts_filter_display">装饰</string>
+    <string name="shop_fonts_filter_script">手写</string>
+    <string name="shop_fonts_filter_mono">等宽</string>
+    <string name="shop_fonts_filter_latin">拉丁</string>
+    <string name="shop_fonts_default_for_new">新文本默认字体 · %1$s</string>
+    <string name="shop_fonts_tap_to_default">点按设为默认 · %1$s</string>
+    <string name="shop_fonts_empty_loading_title">正在加载目录</string>
+    <string name="shop_fonts_empty_title">未找到结果</string>
+    <string name="shop_fonts_empty_loading_message">正在读取 Google Fonts；这只会发生一次并会被缓存。</string>
+    <string name="shop_fonts_empty_message">没有字体符合当前的搜索和筛选条件。</string>
+    <string name="shop_fonts_clear_filters">清除筛选</string>
+    <string name="shop_fonts_loading_preview"> · 正在加载预览</string>
+    <string name="shop_fonts_download_cd">下载</string>
+    <string name="shop_fonts_preview_unavailable">预览不可用</string>
+    <string name="shop_fonts_preview_loading">正在加载预览…</string>
+    <string name="shop_fonts_italic"> · 斜体</string>
+    <string name="shop_fonts_subsets">子集：%1$s</string>
+    <string name="shop_fonts_file">文件：%1$s（%2$s，%3$s）</string>
+    <string name="shop_fonts_licence">许可证</string>
+    <string name="shop_fonts_install"> 安装</string>
+    <string name="shop_fonts_installing"> 正在安装…</string>
+    <string name="shop_fonts_default_button">新文本默认字体</string>
+    <string name="shop_fonts_make_default">设为默认</string>
+    <string name="shop_fonts_remove">移除</string>
+    <string name="shop_fonts_preview_too_large">未显示预览：文件大于 %1$d MB。它仍可安装——下载没有此限制。</string>
+    <string name="shop_fonts_install_pending">字体加载完成后即可安装。</string>
+
+    <!-- Fonts: the catalogue categories, shown as a chip caption and as a row
+         label. The tokens in `GoogleFonts` (`"sans serif"`, …) are comparison
+         keys and stay untranslated; only these captions are localized. -->
+    <string name="shop_fonts_category_sans_serif">无衬线</string>
+    <string name="shop_fonts_category_serif">衬线</string>
+    <string name="shop_fonts_category_display">装饰</string>
+    <string name="shop_fonts_category_handwriting">手写</string>
+    <string name="shop_fonts_category_monospace">等宽</string>
+
+    <!-- Fonts: load and install failures. -->
+    <string name="shop_fonts_catalogue_unavailable">Google Fonts 目录不可用</string>
+    <string name="shop_fonts_install_failed">无法安装 “%1$s”</string>
+
+</resources>

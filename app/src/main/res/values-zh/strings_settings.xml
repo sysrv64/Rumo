@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_title">设置</string>
+
+    <string name="settings_appearance">外观</string>
+    <string name="settings_appearance_summary">主题、动态颜色、种子色</string>
+    <string name="settings_rumi">Rumi 助手</string>
+    <string name="settings_rumi_summary">端点、密钥、连接</string>
+    <string name="settings_diagnostics">诊断</string>
+    <string name="settings_diagnostics_summary">渲染报告与日志</string>
+
+    <string name="settings_section_theme">主题</string>
+    <string name="settings_section_colors">颜色</string>
+    <string name="settings_section_connection">连接</string>
+    <string name="settings_section_ai">AI 服务</string>
+    <string name="settings_section_language">语言</string>
+
+    <string name="settings_theme_dark">深色</string>
+    <string name="settings_theme_light">浅色</string>
+    <string name="settings_theme_system">跟随系统</string>
+    <string name="settings_theme_suffix_dynamic"> · Material You</string>
+    <string name="settings_theme_suffix_seed"> · 种子色</string>
+
+    <string name="settings_dynamic_colors">动态颜色</string>
+    <string name="settings_dynamic_supporting">API 31+ 使用 Material You，否则使用种子配色</string>
+    <string name="settings_seed_color">种子色</string>
+
+    <string name="settings_language">语言</string>
+
+    <string name="diagnostics_section_render">渲染</string>
+    <string name="diagnostics_render">渲染诊断</string>
+    <string name="diagnostics_render_supporting">预览为何使用 CPU 而非 GPU</string>
+    <string name="diagnostics_save_logs">将日志保存到 Download</string>
+    <string name="diagnostics_save_logs_supporting">设备、渲染诊断、Rust 与应用日志</string>
+    <string name="diagnostics_logs_saved">日志已保存到 %1$s</string>
+    <string name="diagnostics_logs_failed">无法保存日志：%1$s</string>
+    <string name="diagnostics_storage_permission">Android 9 及更早版本需要存储权限</string>
+
+    <string name="action_back">返回</string>
+    <string name="action_save">保存</string>
+    <string name="action_saving">正在保存…</string>
+    <string name="action_close">关闭</string>
+    <string name="state_selected">已选择</string>
+</resources>

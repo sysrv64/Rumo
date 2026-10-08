@@ -1,0 +1,36 @@
+[package]
+name = "rumo_media"
+version = "0.0.1"
+edition = "2024"
+license = "Apache-2.0"
+
+[dependencies]
+cpal = "=0.18.2"
+# Speech/voice-activity detector for `vad`. Pure Rust, zero transitive
+# dependencies (verified with `cargo tree`), no `cc`/`cmake`; builds for
+# `aarch64-linux-android`. Licence `MIT OR Apache-2.0` (repo `pykeio/earshot`).
+earshot = "=1.2.2"
+image = { version = "=0.25.10", default-features = false, features = ["gif", "jpeg", "png", "webp"] }
+jni = "=0.22.4"
+kamadak-exif = "=0.6.1"
+symphonia = { version = "=0.6.1", default-features = false, features = ["aac", "isomp4", "mp3", "ogg", "pcm", "vorbis", "wav"] }
+
+# Video decode is Android-only and goes through the NDK: `ndk` wraps
+# AMediaCodec/AMediaFormat/AImageReader, while AMediaExtractor has no ndk 0.9
+# wrapper and is bound directly through raw ndk-sys FFI (same pattern as
+# AMediaMuxer in rumo-export). Target-gated so host builds and unit tests
+# never link libmediandk.
+[target.'cfg(target_os = "android")'.dependencies]
+# `api-level-26` is not implied by `media` (which only turns on `ffi/media`):
+# `media::image_reader` is `#![cfg(feature = "api-level-24")]` and
+# `new_with_usage` needs 26, so without these this crate's surface-decode path
+# would compile *only* by feature unification with whichever other crate happens
+# to raise the level — and `cargo build -p rumo_media` for the device would
+# break. `nativewindow` is what `MediaCodec::configure` takes its output surface
+# through.
+ndk = { version = "=0.9.0", default-features = false, features = [
+    "media",
+    "api-level-26",
+    "nativewindow",
+] }
+ndk-sys = { version = "=0.6.0", features = ["media"] }

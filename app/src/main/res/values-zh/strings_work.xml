@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="work_channel">正在处理</string>
+    <string name="work_channel_description">在助手回答或项目导出期间显示。</string>
+    <string name="work_running_many">正在运行 %1$d 个任务</string>
+</resources>

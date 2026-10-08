@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_title">Настройки</string>
+
+    <string name="settings_appearance">Оформление</string>
+    <string name="settings_appearance_summary">Тема, динамические цвета, акцент</string>
+    <string name="settings_rumi">Ассистент Rumi</string>
+    <string name="settings_rumi_summary">Адрес, ключ, подключение</string>
+    <string name="settings_diagnostics">Диагностика</string>
+    <string name="settings_diagnostics_summary">Отчёт рендера и журналы</string>
+
+    <string name="settings_section_theme">Тема</string>
+    <string name="settings_section_colors">Цвета</string>
+    <string name="settings_section_connection">Подключение</string>
+    <string name="settings_section_ai">AI-сервисы</string>
+    <string name="settings_section_language">Язык</string>
+
+    <string name="settings_theme_dark">Тёмная</string>
+    <string name="settings_theme_light">Светлая</string>
+    <string name="settings_theme_system">Системная</string>
+    <string name="settings_theme_suffix_dynamic"> · Material You</string>
+    <string name="settings_theme_suffix_seed"> · акцент</string>
+
+    <string name="settings_dynamic_colors">Динамические цвета</string>
+    <string name="settings_dynamic_supporting">Material You на API 31+, иначе схема из акцента</string>
+    <string name="settings_seed_color">Цвет акцента</string>
+
+    <string name="settings_language">Язык</string>
+
+    <string name="diagnostics_section_render">Рендер</string>
+    <string name="diagnostics_render">Диагностика рендера</string>
+    <string name="diagnostics_render_supporting">Почему превью на CPU, а не на GPU</string>
+    <string name="diagnostics_save_logs">Сохранить журналы в Download</string>
+    <string name="diagnostics_save_logs_supporting">Устройство, диагностика рендера, журналы Rust и приложения</string>
+    <string name="diagnostics_logs_saved">Журналы сохранены в %1$s</string>
+    <string name="diagnostics_logs_failed">Не удалось сохранить журналы: %1$s</string>
+    <string name="diagnostics_storage_permission">На Android 9 и ниже нужно разрешение на хранилище</string>
+
+    <string name="action_back">Назад</string>
+    <string name="action_save">Сохранить</string>
+    <string name="action_saving">Сохранение…</string>
+    <string name="action_close">Закрыть</string>
+    <string name="state_selected">Выбрано</string>
+</resources>

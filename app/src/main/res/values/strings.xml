@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The product name is a brand, not a word: it reads the same in every
+         language, so it is deliberately absent from values-ru/values-zh. -->
+    <string name="app_name" translatable="false">Rumo</string>
+
+    <!-- Language names are shown in their own script, in every locale: a picker
+         that translated them would be unusable to exactly the person who needs
+         it. They live in the default file, not in values-ru/values-zh. -->
+    <string name="language_english" translatable="false">English</string>
+    <string name="language_russian" translatable="false">Русский</string>
+    <string name="language_chinese" translatable="false">中文</string>
+</resources>

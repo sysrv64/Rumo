@@ -1,0 +1,23 @@
+[package]
+name = "rumo_export"
+version = "0.0.1"
+edition = "2024"
+license = "Apache-2.0"
+
+[lib]
+crate-type = ["rlib"]
+
+[dependencies]
+rumo_core = { path = "../rumo-core" }
+# The audio half of the export: decoding a source to PCM and mixing every source
+# into the single stream the AAC encoder takes (docs/11 §11.5). Both are pure
+# Rust in that crate, so this adds no platform dependency here.
+rumo_media = { path = "../rumo-media" }
+rumo_render = { path = "../rumo-render" }
+jni = "=0.22.4"
+
+# MediaCodec / MediaMuxer are Android-only. ndk 0.9 has no media_muxer
+# wrapper, so AMediaMuxer is bound directly through the raw ndk-sys FFI.
+[target.'cfg(target_os = "android")'.dependencies]
+ndk = { version = "=0.9.0", default-features = false, features = ["media"] }
+ndk-sys = { version = "=0.6.0", features = ["media"] }

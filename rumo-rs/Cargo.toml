@@ -1,0 +1,3 @@
+[workspace]
+members = ["rumo-core", "rumo-render", "rumo-bridge", "rumo-text", "rumo-media", "rumo-export"]
+resolver = "2"

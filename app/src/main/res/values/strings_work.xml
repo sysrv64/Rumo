@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The foreground-service notification: it is the only proof the user has that
+     a model answer or an export is still running after they leave the screen. -->
+<resources>
+    <string name="work_channel">Work in progress</string>
+    <string name="work_channel_description">Shown while the assistant is answering or a project is exporting.</string>
+    <!-- %1$d — how many jobs run at once. -->
+    <string name="work_running_many">%1$d tasks running</string>
+</resources>

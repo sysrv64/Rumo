@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Writing into the public Download on API 26-28; API 29+ writes through
+         MediaStore and needs no permission. MANAGE_EXTERNAL_STORAGE is not needed. -->
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28" />
+
+    <!-- Rumi talks to the OpenCode Go gateway and the console over HTTPS. Without
+         this permission a request does not reach the network at all: neither the
+         model list, nor a message, nor sign-in by device code. The permission is
+         normal (not runtime) — the user will not see a dialog. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- The service that keeps the process alive while a model response or an export
+         is in flight. Without it, leaving the app means "the system may kill the process
+         at any moment", and the work is cut off silently. The `dataSync` type is the
+         closest of the declared ones: the service does not play media and does not hold
+         location, it only keeps the process from dying. On API 34+ the type is mandatory
+         and checked. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROCESSING" />
+
+    <!-- A foreground service does not keep the CPU awake: it only changes the rules of
+         process killing. Without this lock the screen goes off, the CPU falls asleep
+         and the export stalls halfway — formally alive, in fact stopped. -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+    <!-- The service's notification. Requested at the moment work starts, not at
+         launch: without the permission the service still runs, but the notification is
+         invisible — and it is invisible exactly when it is the only proof that work is
+         running. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- Live update (Android 16.1+): the work notification is shown as a chip in the
+         status bar with the system progress bar. The permission is normal, not runtime
+         — no dialog; declaring it is mandatory, otherwise the system will not promote.
+         The user can turn it off themselves, and that is fine: then the notification
+         simply stays ordinary. -->
+    <uses-permission android:name="android.permission.POST_PROMOTED_NOTIFICATIONS" />
+
+    <!-- The project's references live in Download/Rumo/<project>/, and the user puts
+         them there, not the app: that means they are foreign files in shared storage,
+         and they can only be seen through the media collections. On API 33+ these are
+         three separate per-type permissions, below that one common one. They are
+         requested on demand (when the assistant asks for the reference list), not at
+         launch: the app does not need them to run, only for this one task. -->
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
+    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
+
+    <application
+        android:name=".RumoApp"
+        android:allowBackup="true"
+        android:label="@string/app_name"
+        android:theme="@style/Theme.Rumo">
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|uiMode|density|fontScale">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- The service is not exported: only this app can start it.
+             `stopWithTask=false` — because "left the app" and "work is no longer
+             needed" are not the same thing: the user leaves the screen, while the
+             response and the export have to finish.
+
+             Two types, not one: talking to the model is data transfer
+             (`dataSync`), the export is media processing (`mediaProcessing`). The type
+             is not a label: the system uses it to count the time budget and decide what
+             the app is allowed. Which of the two to take, the service decides at
+             `startForeground` from what is running at that moment. -->
+        <service
+            android:name=".work.RumoWorkService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync|mediaProcessing"
+            android:stopWithTask="false" />
+    </application>
+
+</manifest>

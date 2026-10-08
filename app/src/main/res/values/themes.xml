@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App UI is dark everywhere (see ui/theme/RumoTheme.kt), so the window
+         background must not flip to light under a light system configuration. -->
+    <style name="Theme.Rumo" parent="Theme.Material3.Dark.NoActionBar" />
+</resources>

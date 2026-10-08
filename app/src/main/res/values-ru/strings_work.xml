@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="work_channel">Работа идёт</string>
+    <string name="work_channel_description">Показывается, пока ассистент отвечает или проект экспортируется.</string>
+    <string name="work_running_many">Выполняется задач: %1$d</string>
+</resources>

@@ -1,0 +1,19 @@
+Rumo
+====
+
+  app/            GPL-3.0-or-later   the Android application: Kotlin,
+                                     resources, Gradle build scripts
+                                     outside rumo-rs/ — except EaseUi.kt
+  app/…/EaseUi.kt Apache-2.0         a port of rumo-rs/rumo-core/src/ease.rs,
+                                     kept permissive on purpose; see LICENSE
+  rumo-rs/        Apache-2.0         the Rust engine: six crates
+  APK             GPL-3.0-or-later   the whole is a combined work
+
+Full texts: LICENSE (GPL-3.0-or-later) and rumo-rs/LICENSE-APACHE
+(Apache-2.0).
+
+The GPL and Apache texts are the standard, unmodified licence documents.
+Their "how to apply these terms" examples have been filled in with this
+program's name; nothing else in either text was changed.
+
+Copyright (C) 2026 Kerneldroid.

@@ -1,0 +1,3 @@
+[submodule "ai-engines"]
+	path = ai-engines
+	url = https://github.com/sysrv64/AI-Engines.git

@@ -1,0 +1,17 @@
+target/
+.gradle/
+build/
+app/src/main/jniLibs/
+*.iml
+.idea/
+.DS_Store
+local.properties
+.opencode/
+
+# Not published: the design record stays on disk and out of the repository.
+/docs/
+/TASTE.md
+/CONCEPT.md
+
+# Not part of this project: an unrelated working directory that lives beside it.
+/School/

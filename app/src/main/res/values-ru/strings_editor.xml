@@ -1,0 +1,498 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!--
+    The editor area: the editor screen, its panels and the project screens.
+
+    Keys shared by several screens in this file keep one prefix per group
+    (`editor_`, `panel_`, `projects_`, `home_`, `nav_`) so the same verb cannot
+    drift apart between screens. Keys that already exist in strings_settings.xml
+    (`action_back`, `action_close`, `settings_title`, `diagnostics_*`) are
+    referenced, not duplicated.
+-->
+
+    <string name="nav_home">Главная</string>
+    <string name="nav_projects">Проекты</string>
+    <string name="nav_shop">Магазин</string>
+    <string name="nav_new_project">Новый проект</string>
+
+    <!-- ===================== Home (HomeScreen.kt) ===================== -->
+
+    <string name="home_recent">Недавние проекты</string>
+    <string name="home_all">Все</string>
+    <string name="home_empty_title">Пока нет проектов</string>
+    <string name="home_empty_message">В проекте хранятся таймлайн, клипы и экспорт.</string>
+    <string name="home_start_one">Создать</string>
+    <string name="home_ask_rumi">Спросить Rumi</string>
+    <string name="home_ask_rumi_hint">Встроенный ассистент: сам монтирует, рендерит и проверяет свою работу.</string>
+    <string name="home_delete_project">Удалить проект</string>
+
+    <!-- ===================== Projects (ProjectsScreen.kt) ===================== -->
+
+    <string name="projects_title">Проекты</string>
+    <string name="projects_reading">Читаю папку проектов…</string>
+    <string name="projects_none">Ничего не сохранено</string>
+    <string name="projects_edited_at">Изменён %1$s</string>
+    <plurals name="projects_saved_count">
+        <item quantity="one">%1$d сохранённый проект</item>
+        <item quantity="few">%1$d сохранённых проекта</item>
+        <item quantity="many">%1$d сохранённых проектов</item>
+        <item quantity="other">%1$d сохранённого проекта</item>
+    </plurals>
+    <string name="projects_empty_title">Сохранённых проектов пока нет</string>
+    <string name="projects_empty_message">Кнопка «плюс» создаёт проект, а инструмент проектов Rumi сохраняет то, что собрал ассистент.</string>
+    <string name="projects_start_one">Создать</string>
+    <string name="projects_actions">Действия для «%1$s»</string>
+    <string name="projects_rename">Переименовать</string>
+    <string name="projects_clone">Клонировать</string>
+    <string name="projects_export">Экспорт</string>
+    <string name="projects_delete">Удалить</string>
+    <string name="projects_rename_title">Переименовать проект</string>
+    <string name="projects_rename_name">Имя</string>
+    <string name="projects_cancel">Отмена</string>
+    <string name="projects_ok">ОК</string>
+    <string name="projects_delete_title">Удалить этот проект?</string>
+    <string name="projects_delete_message">«%1$s» будет удалён из папки проектов. Это действие необратимо.</string>
+    <string name="projects_read_failed">Не удалось прочитать «%1$s».</string>
+    <string name="projects_cloned">Создана копия «%1$s».</string>
+    <string name="projects_exported">Экспортировано в %1$s.</string>
+    <string name="projects_export_failed">Не удалось экспортировать: %1$s</string>
+
+    <!-- ===================== Editor screen (EditorScreen.kt) ===================== -->
+
+    <string name="editor_layer_deleted">Слой удалён</string>
+    <string name="editor_undo">Отменить</string>
+    <string name="editor_redo">Повторить</string>
+    <string name="editor_cancel">Отмена</string>
+
+    <string name="editor_layer_background">Фон</string>
+    <string name="editor_shape_frame">Фон</string>
+    <string name="editor_add_layer">Добавить слой</string>
+    <string name="editor_save_project">Сохранить проект</string>
+    <string name="editor_more">Ещё</string>
+    <string name="editor_node_graph">Граф узлов</string>
+    <string name="editor_canvas_menu">Холст…</string>
+    <string name="editor_project_folder">Папка проекта</string>
+    <string name="editor_export_mp4">Экспорт MP4</string>
+    <string name="editor_fit_frame">Вписать в кадр</string>
+    <string name="editor_fill_frame">Заполнить кадр</string>
+    <string name="editor_open_failed">файл не открылся, начат новый проект</string>
+    <string name="editor_unsaved_title">Есть несохранённые изменения</string>
+    <string name="editor_unsaved_message">Сохранить проект перед выходом?</string>
+    <string name="editor_unsaved_save_exit">Сохранить и выйти</string>
+    <string name="editor_unsaved_discard">Не сохранять</string>
+    <string name="editor_preview_gpu_unavailable">Путь GPU недоступен</string>
+    <string name="editor_preview_gpu_unavailable_hint">Устройство отказало в поверхности рендеринга — см. «Диагностику»</string>
+    <string name="editor_preview_empty">Пустой кадр</string>
+    <string name="editor_preview_empty_hint">Добавьте фигуру, фото или текст на вкладке «Медиа»</string>
+    <string name="editor_transport_start">В начало</string>
+    <string name="editor_transport_pause">Пауза</string>
+    <string name="editor_transport_play">Воспроизвести</string>
+    <string name="editor_transport_end">В конец</string>
+    <string name="editor_video_unreadable">Не удалось прочитать видео — клип так и не открылся</string>
+    <string name="editor_timeline_empty">  Таймлайн пуст — добавьте слой на вкладке «Медиа»</string>
+
+    <!-- ===================== Saving and export (EditorScreen.kt, Export.kt) ===== -->
+
+    <string name="editor_save_encode_failed">Не удалось сохранить: проект не удалось закодировать</string>
+    <string name="editor_save_failed">Не удалось сохранить %1$s: %2$s</string>
+    <string name="editor_save_unknown_error">неизвестная ошибка</string>
+    <string name="editor_saved">Сохранено: %1$s</string>
+    <string name="editor_folder_hint">Папка: Download/%1$s</string>
+    <string name="editor_export_running">Экспорт MP4</string>
+    <string name="editor_export_failed">Не удалось экспортировать: %1$s</string>
+    <string name="editor_export_saved">Сохранено в Download/Rumo</string>
+    <string name="editor_export_write_failed">Не удалось записать в Download/Rumo: %1$s</string>
+    <string name="editor_export_resolution">Разрешение</string>
+    <string name="editor_export_frame_rate">Частота кадров</string>
+    <string name="editor_export_portrait_suffix"> (портрет)</string>
+    <string name="editor_export_summary">%1$d×%2$d, %3$d fps</string>
+    <string name="editor_export_action">Экспорт</string>
+    <string name="editor_export_hide">Скрыть</string>
+
+    <!-- ===================== Editor dock (EditorDock.kt) ===================== -->
+
+    <string name="editor_dock_done">Готово</string>
+
+    <!-- ===================== Canvas dialog (CanvasDialog.kt) ===================== -->
+
+    <string name="editor_canvas_title">Холст</string>
+    <string name="editor_canvas_hint">Кадр, в котором собирается проект. Пресеты — тот же список, что и в экспорте; размеры можно задать вручную.</string>
+    <string name="editor_canvas_width">Ширина</string>
+    <string name="editor_canvas_height">Высота</string>
+    <string name="editor_canvas_background">Фон</string>
+    <string name="editor_canvas_background_colour">Цвет фона</string>
+    <string name="editor_canvas_range">Ширина и высота должны быть от %1$d до %2$d.</string>
+    <string name="editor_canvas_apply">Применить</string>
+
+    <!-- ===================== Render diagnostics ===================== -->
+
+    <string name="editor_diag_path_unknown">НЕИЗВЕСТНО</string>
+    <string name="editor_diag_no_gpu">нет устройства GPU</string>
+    <string name="editor_diag_pill_surface">экран: %1$s</string>
+    <string name="editor_diag_pill_offscreen">оффскрин: %1$s</string>
+    <string name="editor_diag_layer_status">Состояние слоя</string>
+    <string name="editor_diag_unavailable">Нативная диагностика недоступна.</string>
+    <string name="editor_diag_rejected_effects">Отклонённые эффекты</string>
+    <string name="editor_diag_log">Журнал</string>
+    <string name="editor_diag_empty">Диагностика пока не записана</string>
+    <string name="editor_diag_empty_hint">За этот сеанс в журнал ничего не попало.</string>
+    <string name="editor_diag_refresh">Обновить</string>
+    <string name="editor_diag_clip_label">диагностика рендера rumo</string>
+    <string name="editor_diag_copied">Диагностика скопирована</string>
+    <string name="editor_diag_copy">Копировать</string>
+    <string name="editor_diag_clear">Очистить</string>
+
+    <!-- Written into the project's reference folder as README.txt, once, when the
+         folder is created. %1$s is the folder name. -->
+
+    <string name="editor_assets_readme">«%1$s» — папка материалов проекта Rumo.\n\nСюда кладите материалы проекта: картинки, видео, звук.\nRumo и ассистент Rumi читают файлы отсюда: файл можно назвать\nпрямо в чате, и импорт добавит его в проект как слой.\n\nПапка лежит вне приложения, поэтому переустановка Rumo её не удалит.\nЭтот файл создаёт саму папку — удалять его не нужно.\n</string>
+
+    <!-- ===================== Panels: shared ==================================== -->
+
+    <string name="panel_add">Добавить</string>
+    <string name="panel_ok">ОК</string>
+    <string name="panel_cancel">Отмена</string>
+    <string name="panel_delete">Удалить</string>
+    <string name="panel_hide">Скрыть</string>
+    <string name="panel_show">Показать</string>
+    <string name="panel_lock">Заблокировать</string>
+    <string name="panel_unlock">Разблокировать</string>
+    <string name="panel_rename">Переименовать</string>
+    <string name="panel_rename_title">Переименовать слой</string>
+    <string name="panel_rename_name">Имя</string>
+    <string name="panel_off">выкл.</string>
+    <string name="panel_control_reset">Сбросить %1$s</string>
+    <string name="panel_add_layer">Добавить слой</string>
+
+    <!-- Spoken by a screen reader for the kind mark; LayerKindUi.name is the
+         enum constant and is not a word. -->
+
+    <string name="panel_kind_shape">Фигура</string>
+    <string name="panel_kind_text">Текст</string>
+    <string name="panel_kind_media">Медиа</string>
+    <string name="panel_kind_audio">Аудио</string>
+
+    <string name="panel_layers">Слои</string>
+    <string name="panel_properties">Свойства</string>
+    <string name="panel_media">Медиа</string>
+    <string name="panel_audio">Аудио</string>
+    <string name="panel_fonts">Шрифты</string>
+
+    <!-- ===================== Panels: layers (LayersPanel.kt) =================== -->
+
+    <plurals name="panel_layers_subtitle">
+        <item quantity="one">%1$d слой · первый ряд рисуется первым</item>
+        <item quantity="few">%1$d слоя · первый ряд рисуется первым</item>
+        <item quantity="many">%1$d слоёв · первый ряд рисуется первым</item>
+        <item quantity="other">%1$d слоя · первый ряд рисуется первым</item>
+    </plurals>
+    <string name="panel_layers_empty">Пустой стек</string>
+    <string name="panel_layers_empty_hint">Добавьте фигуру, фото или текст на вкладке «Медиа».</string>
+    <string name="panel_layers_tris">%1$d трис</string>
+    <plurals name="panel_layers_keys">
+        <item quantity="one">%1$d ключ</item>
+        <item quantity="few">%1$d ключа</item>
+        <item quantity="many">%1$d ключей</item>
+        <item quantity="other">%1$d ключа</item>
+    </plurals>
+    <string name="panel_layers_hidden">СКРЫТ</string>
+    <string name="panel_layers_locked">ЗАБЛОКИРОВАН</string>
+    <string name="panel_layers_change_shape">Сменить фигуру</string>
+    <string name="panel_layers_current_shape">Текущая фигура</string>
+    <string name="panel_layers_reorder">Переставить</string>
+    <string name="panel_layers_menu">Меню слоя</string>
+
+    <!-- ===================== Panels: audio (AudioPanel.kt) ===================== -->
+
+    <string name="panel_audio_subtitle">%1$d/%2$d дорожек подключено к движку</string>
+    <string name="panel_pause_playback">Пауза</string>
+    <string name="panel_resume_playback">Продолжить воспроизведение</string>
+    <string name="panel_audio_import">Импортировать аудио</string>
+    <string name="panel_audio_playhead_playing">Курсор %1$s · воспроизведение</string>
+    <string name="panel_audio_playhead_paused">Курсор %1$s · пауза</string>
+    <string name="panel_audio_empty">Нет аудио</string>
+    <string name="panel_audio_empty_hint">Первая подключённая дорожка становится мастер-часами воспроизведения.</string>
+    <string name="panel_audio_decoded">ДЕКОДИРОВАНО · %1$s</string>
+    <string name="panel_audio_no_player">НЕТ ПЛЕЕРА · %1$s</string>
+    <string name="panel_audio_seek">Перейти к курсору</string>
+
+    <!-- ===================== Panels: fonts (FontsPanel.kt) ===================== -->
+
+    <string name="panel_fonts_none">ничего не установлено</string>
+    <string name="panel_fonts_installed">установлено: %1$d</string>
+    <string name="panel_fonts_select_text">Выберите текстовый слой, чтобы применить шрифт — шрифты только для текста.</string>
+    <string name="panel_fonts_selected_uses">В выбранном тексте используется %1$s.</string>
+    <string name="panel_font_builtin">Встроенный моноширинный</string>
+    <string name="panel_fonts_always_available">Доступен всегда</string>
+    <string name="panel_fonts_empty">Шрифты не установлены</string>
+    <string name="panel_fonts_empty_hint">Шрифты берутся во вкладке «Магазин» — установите там, и он появится здесь с живым превью.</string>
+    <string name="panel_fonts_license_installed">Установлен</string>
+    <string name="panel_fonts_in_use">Используется</string>
+    <string name="panel_fonts_options">Действия со шрифтом</string>
+
+    <!-- ===================== Panels: properties (InspectorPanel.kt) ============= -->
+
+    <string name="panel_inspector_font">Шрифт</string>
+    <string name="panel_inspector_back_builtin">Вернуться к встроенному шрифту</string>
+    <string name="panel_inspector_no_fonts">Шрифты ещё не установлены. Их скачивает вкладка «Магазин».</string>
+    <string name="panel_inspector_empty">Ничего не выбрано</string>
+    <string name="panel_inspector_empty_hint">Коснитесь клипа на таймлайне, плитки в медиатеке или строки слоя.</string>
+    <string name="panel_inspector_locked">%1$s · заблокирован</string>
+    <string name="panel_inspector_show_pipeline">Показать конвейер</string>
+    <string name="panel_inspector_section_text">Текст</string>
+    <string name="panel_inspector_layer_text">Текст слоя</string>
+    <string name="panel_inspector_weight">Насыщенность</string>
+    <string name="panel_weight_thin">Тонкий</string>
+    <string name="panel_weight_extra_light">Сверхлёгкий</string>
+    <string name="panel_weight_light">Лёгкий</string>
+    <string name="panel_weight_regular">Обычный</string>
+    <string name="panel_weight_medium">Средний</string>
+    <string name="panel_weight_semi_bold">Полужирный</string>
+    <string name="panel_weight_bold">Жирный</string>
+    <string name="panel_weight_extra_bold">Сверхжирный</string>
+    <string name="panel_weight_black">Чёрный</string>
+    <string name="panel_inspector_axis">Ось</string>
+    <string name="panel_inspector_section_outline">Обводка</string>
+    <string name="panel_inspector_thickness">Толщина</string>
+    <string name="panel_inspector_outline_colour">Цвет обводки</string>
+    <string name="panel_inspector_choose_outline_colour">Выбрать цвет обводки</string>
+    <string name="panel_inspector_section_transform">Трансформация</string>
+    <string name="panel_inspector_offset_x">Смещение X</string>
+    <string name="panel_inspector_offset_y">Смещение Y</string>
+    <string name="panel_inspector_rotation">Поворот</string>
+    <string name="panel_inspector_section_appearance">Внешний вид</string>
+    <string name="panel_inspector_opacity">Непрозрачность</string>
+    <string name="panel_inspector_colour">Цвет</string>
+    <string name="panel_inspector_choose_colour">Выбрать цвет слоя</string>
+    <string name="panel_inspector_layer_colour">Цвет слоя</string>
+    <string name="panel_inspector_section_timing">Тайминг</string>
+    <string name="panel_inspector_clip_length">Длительность клипа</string>
+    <string name="panel_inspector_drives_length">Определяет длину проекта · курсор %1$s</string>
+    <string name="panel_effects">Эффекты</string>
+    <string name="panel_inspector_no_gain">в движке нет усиления</string>
+    <string name="panel_inspector_file_linked">файл привязан</string>
+    <string name="panel_inspector_no_file">нет файла</string>
+    <string name="panel_inspector_remove_key">Удалить ключ</string>
+    <string name="panel_inspector_add_key">Добавить ключ</string>
+
+    <!-- ===================== Panels: media (MediaPanel.kt) ====================== -->
+
+    <string name="panel_media_tab_shapes">Фигуры</string>
+    <string name="panel_media_tab_photos">Фото</string>
+    <string name="panel_media_tab_svg">SVG</string>
+    <string name="panel_media_tab_text">Текст</string>
+    <plurals name="panel_media_shapes">
+        <item quantity="one">%1$d фигура</item>
+        <item quantity="few">%1$d фигуры</item>
+        <item quantity="many">%1$d фигур</item>
+        <item quantity="other">%1$d фигуры</item>
+    </plurals>
+    <plurals name="panel_media_photos">
+        <item quantity="one">%1$d фото</item>
+        <item quantity="few">%1$d фото</item>
+        <item quantity="many">%1$d фото</item>
+        <item quantity="other">%1$d фото</item>
+    </plurals>
+    <plurals name="panel_media_svg">
+        <item quantity="one">%1$d SVG</item>
+        <item quantity="few">%1$d SVG</item>
+        <item quantity="many">%1$d SVG</item>
+        <item quantity="other">%1$d SVG</item>
+    </plurals>
+    <plurals name="panel_media_audio">
+        <item quantity="one">%1$d аудио</item>
+        <item quantity="few">%1$d аудио</item>
+        <item quantity="many">%1$d аудио</item>
+        <item quantity="other">%1$d аудио</item>
+    </plurals>
+    <string name="panel_media_import_photo">Импортировать фото</string>
+    <string name="panel_media_import_video">Импортировать видео</string>
+    <string name="panel_media_photos_empty">Фото пока нет</string>
+    <string name="panel_media_photos_empty_hint">Импортируйте фото — оно появится на таймлайне как клип.</string>
+    <string name="panel_media_photo_meta">ФОТО · %1$s</string>
+    <string name="panel_media_import_svg">Импортировать SVG</string>
+    <string name="panel_media_svg_empty">SVG пока нет</string>
+    <string name="panel_media_svg_empty_hint">Импортируйте файл .svg — он копируется в папку проекта и рисуется как векторная геометрия.</string>
+    <string name="panel_media_svg_meta">SVG · вектор</string>
+    <string name="panel_media_text_meta">ТЕКСТ · правка в «Свойствах»</string>
+    <string name="panel_media_new_text">Новый текстовый слой</string>
+    <string name="panel_media_tris">%1$d трис</string>
+    <string name="panel_media_svg_failed">Не удалось импортировать SVG</string>
+    <string name="panel_media_svg_lossy_title">SVG использует то, что вектор не нарисует</string>
+    <string name="panel_media_svg_lossy_message">«%1$s» использует %2$d элем., которые пропускает векторный рендерер (шаблоны, маски, обтравочные контуры, фильтры, текст). Нарисуйте его как картинку, чтобы сохранить всё — картинка становится обычным слоем изображения и не масштабируется без размытия.</string>
+    <string name="panel_media_svg_refused_title">SVG нельзя нарисовать вектором</string>
+    <string name="panel_media_svg_refused_message">Векторный рендерер отклонил «%1$s». Нарисуйте его как картинку: весь документ отрисуется, но обычным слоем изображения, поэтому не будет масштабироваться без размытия.</string>
+    <string name="panel_media_svg_refused_message_reason">Векторный рендерер отклонил «%1$s» (%2$s). Нарисуйте его как картинку: весь документ отрисуется, но обычным слоем изображения, поэтому не будет масштабироваться без размытия.</string>
+    <string name="panel_media_svg_raster">Нарисовать картинкой</string>
+    <string name="panel_media_svg_vector">Нарисовать вектором</string>
+
+    <!-- ===================== Panels: effects (EffectsPanel.kt) ================== -->
+
+    <string name="panel_effects_reorder">Переставить эффект</string>
+    <string name="panel_effects_unavailable">недоступен</string>
+    <string name="panel_effects_actions">Действия с эффектом</string>
+    <string name="panel_effects_chain">Цепочка эффектов</string>
+    <string name="panel_effects_add">Добавить эффект</string>
+    <string name="panel_effects_no_catalogue">движок не сообщил каталог эффектов</string>
+    <string name="panel_effects_empty">Эффектов нет</string>
+    <string name="panel_effects_empty_hint">Добавьте: эффекты выполняются сверху вниз, в этом порядке.</string>
+    <string name="panel_effects_unknown">неизвестный эффект — параметров нет</string>
+    <string name="panel_effects_no_params">у этого эффекта нет параметров</string>
+    <string name="panel_effects_preview_on">Превью на %1$s</string>
+    <string name="panel_effects_no_preview_layer">Нет видимого слоя для превью</string>
+    <string name="panel_effects_search">Поиск эффектов</string>
+    <string name="panel_effects_no_catalogue_long">Движок не сообщил каталог эффектов.</string>
+    <string name="panel_effects_shop">МАГАЗИН</string>
+    <string name="panel_effects_add_to_layer">Добавить на слой</string>
+    <string name="panel_effects_choose">Выбрать %1$s</string>
+    <string name="panel_effects_alpha">Альфа</string>
+    <string name="panel_effects_no_choices">нет вариантов</string>
+    <string name="panel_effects_value">Значение</string>
+    <string name="panel_effects_set">Задать</string>
+    <string name="panel_effects_hue">Оттенок</string>
+    <string name="panel_effects_colour">Цвет %1$s</string>
+    <string name="panel_effects_done">Готово</string>
+
+    <!-- The engine ships its effect names, parameter labels and choice values as
+         English `&'static str`, and those strings are also the identity it acts on:
+         an id addresses a built-in effect, a (effect id, parameter key) pair
+         addresses a parameter, a choice value comes back as its index. EffectsPanel.kt
+         maps that identity to these strings at the display site; a miss falls back to
+         the engine's own text, so an effect added to rumo-core is still shown, just
+         untranslated. Nothing here is ever sent to the engine.
+         The English below is deliberately identical to the engine's own spelling —
+         including "Colour Tune" and "Reorient Sphere" — so English reads exactly as
+         it did before this block existed. Only values-ru/ and values-zh/ differ. -->
+
+    <!-- The engine ships its effect names, parameter labels and choice values as
+         English `&'static str`, and those strings are also the identity it acts on:
+         an id addresses a built-in effect, a (effect id, parameter key) pair
+         addresses a parameter, a choice value comes back as its index. EffectsPanel.kt
+         maps that identity to these strings at the display site; a miss falls back to
+         the engine's own text, so an effect added to rumo-core is still shown, just
+         untranslated. Nothing here is ever sent to the engine.
+         The English below is deliberately identical to the engine's own spelling —
+         including "Colour Tune" and "Reorient Sphere" — so English reads exactly as
+         it did before this block existed. Only values-ru/ and values-zh/ differ. -->
+
+    <string name="effect_name_blur">Размытие</string>
+    <string name="effect_name_color_tune">Цветокоррекция</string>
+    <string name="effect_name_threshold">Порог</string>
+    <string name="effect_name_chroma_key">Хромакей</string>
+    <string name="effect_name_copy_background">Подложка</string>
+    <string name="effect_name_pixelate">Пикселизация</string>
+    <string name="effect_name_sphere360">Вращение сферы</string>
+    <string name="effect_name_drop_shadow">Тень</string>
+    <string name="effect_name_inner_shadow">Внутренняя тень</string>
+    <string name="effect_name_glow">Свечение</string>
+
+    <string name="effect_param_blur_mode">Режим</string>
+    <string name="effect_param_blur_radius">Радиус</string>
+    <string name="effect_param_blur_angle">Угол</string>
+    <string name="effect_param_blur_downscale">Понижение разрешения</string>
+    <string name="effect_param_color_tune_hue">Оттенок</string>
+    <string name="effect_param_color_tune_chroma">Цветность</string>
+    <string name="effect_param_color_tune_lightness">Светлота</string>
+    <string name="effect_param_color_tune_brightness">Яркость</string>
+    <string name="effect_param_color_tune_contrast">Контраст</string>
+    <string name="effect_param_color_tune_saturation">Насыщенность</string>
+    <string name="effect_param_threshold_level">Уровень</string>
+    <string name="effect_param_threshold_softness">Смягчение</string>
+    <string name="effect_param_threshold_mode">Режим</string>
+    <string name="effect_param_chroma_key_key">Цвет ключа</string>
+    <string name="effect_param_chroma_key_similarity">Сходство</string>
+    <string name="effect_param_chroma_key_softness">Смягчение</string>
+    <string name="effect_param_chroma_key_spill">Подавление ореола</string>
+    <string name="effect_param_copy_background_mode">Режим</string>
+    <string name="effect_param_copy_background_color">Цвет</string>
+    <string name="effect_param_copy_background_tolerance">Допуск</string>
+    <string name="effect_param_copy_background_feather">Растушёвка</string>
+    <string name="effect_param_pixelate_size">Размер блока</string>
+    <string name="effect_param_pixelate_shape">Форма</string>
+    <string name="effect_param_sphere360_radius">Радиус</string>
+    <string name="effect_param_sphere360_yaw">Поворот</string>
+    <string name="effect_param_sphere360_pitch">Наклон</string>
+    <string name="effect_param_sphere360_fov">Угол обзора</string>
+    <string name="effect_param_drop_shadow_offset_x">Смещение X</string>
+    <string name="effect_param_drop_shadow_offset_y">Смещение Y</string>
+    <string name="effect_param_drop_shadow_blur">Размытие</string>
+    <string name="effect_param_drop_shadow_spread">Размах</string>
+    <string name="effect_param_drop_shadow_color">Цвет</string>
+    <string name="effect_param_drop_shadow_opacity">Непрозрачность</string>
+    <string name="effect_param_inner_shadow_offset_x">Смещение X</string>
+    <string name="effect_param_inner_shadow_offset_y">Смещение Y</string>
+    <string name="effect_param_inner_shadow_blur">Размытие</string>
+    <string name="effect_param_inner_shadow_spread">Размах</string>
+    <string name="effect_param_inner_shadow_color">Цвет</string>
+    <string name="effect_param_inner_shadow_opacity">Непрозрачность</string>
+    <string name="effect_param_glow_threshold">Порог</string>
+    <string name="effect_param_glow_radius">Радиус</string>
+    <string name="effect_param_glow_intensity">Интенсивность</string>
+    <string name="effect_param_glow_color">Цвет тонирования</string>
+    <string name="effect_param_glow_tint">Степень тонирования</string>
+
+    <string name="effect_choice_gaussian">Гауссово</string>
+    <string name="effect_choice_box">Прямоугольное</string>
+    <string name="effect_choice_directional">Направленное</string>
+    <string name="effect_choice_mask">Маска</string>
+    <string name="effect_choice_luma">Яркость</string>
+    <string name="effect_choice_alpha">Альфа</string>
+    <string name="effect_choice_chroma">Цветность</string>
+    <string name="effect_choice_black">Чёрный</string>
+    <string name="effect_choice_white">Белый</string>
+    <string name="effect_choice_color">Цвет</string>
+    <string name="effect_choice_square">Квадрат</string>
+    <string name="effect_choice_hex">Шестиугольник</string>
+
+    <!-- ===================== Panels: nodes (NodesPanel.kt) ====================== -->
+
+    <string name="panel_node_source">Источник</string>
+    <string name="panel_node_transform">Трансформация</string>
+    <string name="panel_node_appearance">Внешний вид</string>
+    <string name="panel_node_transition">Переход</string>
+    <string name="panel_node_timing">Тайминг</string>
+    <string name="panel_node_output">Вывод</string>
+    <plurals name="panel_nodes_params">
+        <item quantity="one">%1$d параметр</item>
+        <item quantity="few">%1$d параметра</item>
+        <item quantity="many">%1$d параметров</item>
+        <item quantity="other">%1$d параметра</item>
+    </plurals>
+    <string name="panel_nodes_cross_fade">кроссфейд</string>
+    <string name="panel_nodes_fade_in">появление</string>
+    <string name="panel_nodes_not_set">не задан</string>
+    <string name="panel_nodes_output">компоновщик экспорта · %1$s</string>
+    <plurals name="panel_nodes_keys">
+        <item quantity="one">%1$d ключ</item>
+        <item quantity="few">%1$d ключа</item>
+        <item quantity="many">%1$d ключей</item>
+        <item quantity="other">%1$d ключа</item>
+    </plurals>
+    <string name="panel_nodes_no_cross_fade">кроссфейда нет</string>
+    <string name="panel_nodes_set_cross_fade">Задать кроссфейд</string>
+    <string name="panel_nodes_cross_fade_hint">Плавно проявляет этот слой поверх слоя под ним.</string>
+    <string name="panel_nodes_start">Начало</string>
+    <string name="panel_nodes_duration">Длительность</string>
+    <string name="panel_nodes_with_below">Со слоем ниже</string>
+    <string name="panel_nodes_enabled">Включён</string>
+    <string name="panel_nodes_remove">Удалить</string>
+    <string name="panel_nodes_disable">Отключить</string>
+    <string name="panel_nodes_enable">Включить</string>
+    <string name="panel_nodes_locked">Слой заблокирован — снимите блокировку в «Слоях», чтобы двигать его.</string>
+    <plurals name="panel_nodes_rotation_keys">
+        <item quantity="one">%1$d ключ поворота</item>
+        <item quantity="few">%1$d ключа поворота</item>
+        <item quantity="many">%1$d ключей поворота</item>
+        <item quantity="other">%1$d ключа поворота</item>
+    </plurals>
+    <string name="panel_nodes_scene">сцена 512×288</string>
+    <string name="panel_nodes_surface">ПОВЕРХНОСТЬ</string>
+    <string name="panel_nodes_bitmap">БИТМАП</string>
+    <string name="panel_nodes_add_effect">Добавить узел эффекта</string>
+    <string name="panel_nodes_subtitle">%1$s · перетащите, чтобы двигать, коснитесь для параметров</string>
+    <string name="panel_nodes_no_layer">нет слоя</string>
+    <string name="panel_nodes_reset">Сбросить</string>
+    <string name="panel_nodes_close">Закрыть граф узлов</string>
+
+</resources>
