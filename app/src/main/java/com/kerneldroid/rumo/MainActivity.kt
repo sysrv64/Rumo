@@ -5,6 +5,8 @@ import android.Manifest
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.LocalActivityResultRegistryOwner
+import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -172,7 +174,22 @@ class MainActivity : ComponentActivity() {
             val localizedContext = remember(settings.appLanguage) {
                 baseContext.withAppLanguage(settings.appLanguage)
             }
-            CompositionLocalProvider(LocalContext provides localizedContext) {
+            CompositionLocalProvider(
+                LocalContext provides localizedContext,
+                // Swapping the context takes two owners with it, and nothing else in
+                // this tree provides either one. `LocalActivityResultRegistryOwner` and
+                // `LocalOnBackPressedDispatcherOwner` are each derived from
+                // `LocalContext.current as? …Owner` when nobody provides them, which
+                // held only while the context was the activity — and a context from
+                // `createConfigurationContext` is neither. So every
+                // `rememberLauncherForActivityResult` and every `BackHandler` below this
+                // line found no owner and threw: the assistant's screen, which asks for
+                // the media permission and handles Back itself, died on the launcher
+                // before it had drawn anything. The activity is still the owner; the
+                // context has just stopped implying it, so it is named here.
+                LocalActivityResultRegistryOwner provides this,
+                LocalOnBackPressedDispatcherOwner provides this,
+            ) {
                 RumoTheme(
                     forceDark = dark,
                     dynamicOverride = settings.dynamic,

@@ -114,6 +114,16 @@ the locale (`Context.withAppLanguage` in `ui/AppLanguage.kt`), not by
 `recreate()`. Restarting the activity would discard the open project, which
 lives in the composition's `remember`.
 
+That swap replaces `LocalContext` for everything below it, and two owners are
+derived from `LocalContext` when nobody provides them:
+`LocalActivityResultRegistryOwner` and `LocalOnBackPressedDispatcherOwner`, each
+falling back to `LocalContext.current as? …Owner`. The context
+`createConfigurationContext` returns is neither one, so the provider at the root
+of `MainActivity` hands both back explicitly — **do not remove those two lines as
+redundant.** Without them the first `rememberLauncherForActivityResult` or
+`BackHandler` below the root throws, which is how the assistant's screen and the
+editor both died on the first build that carried the language switch.
+
 ## Where builds happen
 
 On GitHub, in CI. Not on a workstation and not on a phone, which is where this
