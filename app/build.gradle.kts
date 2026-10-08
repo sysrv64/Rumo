@@ -1,3 +1,5 @@
+import java.io.File
+import java.util.Base64
 import java.util.Properties
 
 /**
@@ -33,6 +35,46 @@ plugins {
     alias(libs.plugins.kotlin.compose)
 }
 
+/**
+ * Release signing material, taken from the environment and never kept in the repository.
+ *
+ * The keystore arrives in one of two shapes: `RUMO_KEYSTORE_FILE`, a path to an already
+ * decoded `.jks` (what `.github/workflows/release.yml` writes, under `$RUNNER_TEMP`), or
+ * `RUMO_KEYSTORE_BASE64`, the name the repository secret actually has, decoded here into
+ * the ignored `build/` directory so the four secrets work on their own. The passwords are
+ * read from the environment and written nowhere.
+ *
+ * When the material is absent — a pull request, a local build — no `release` signing
+ * configuration is created at all, so AGP leaves the release unsigned
+ * (`app-release-unsigned.apk`) instead of failing, and `debug` keeps the standard debug
+ * keystore: the only line that could ever hand it another one is the explicit assignment
+ * in `buildTypes.release` below.
+ */
+val releaseKeystoreFile: File? = run {
+    val path = System.getenv("RUMO_KEYSTORE_FILE")?.takeIf { it.isNotBlank() }
+    val encoded = System.getenv("RUMO_KEYSTORE_BASE64")?.takeIf { it.isNotBlank() }
+    when {
+        path != null -> File(path)
+        encoded != null -> File(layout.buildDirectory.asFile.get(), "rumo-release.jks").also { file ->
+            file.parentFile?.mkdirs()
+            try {
+                // MIME decoder: `base64` output is wrapped at 76 columns by some tools,
+                // and a wrapped keystore fails as a corrupt file much later.
+                file.writeBytes(Base64.getMimeDecoder().decode(encoded))
+            } catch (e: IllegalArgumentException) {
+                throw GradleException("RUMO_KEYSTORE_BASE64 is not valid base64", e)
+            }
+        }
+        else -> null
+    }
+}
+val releaseStorePassword: String? = System.getenv("RUMO_KEYSTORE_PASSWORD")?.takeIf { it.isNotBlank() }
+val releaseKeyAlias: String? = System.getenv("RUMO_KEY_ALIAS")?.takeIf { it.isNotBlank() }
+val releaseKeyPassword: String? = System.getenv("RUMO_KEY_PASSWORD")?.takeIf { it.isNotBlank() }
+val releaseSigningAvailable: Boolean =
+    releaseKeystoreFile != null && releaseStorePassword != null &&
+        releaseKeyAlias != null && releaseKeyPassword != null
+
 android {
     namespace = "com.kerneldroid.rumo"
     // core-ktx 1.19.0 requires compileSdk >= 37 to link.
@@ -46,13 +88,37 @@ android {
         // "apply last year's rules to me", and it is only needed by those who
         // have not yet fixed what those rules broke.
         targetSdk = 37
-        versionCode = 1
-        versionName = "0.1"
+        // A release takes its version from the tag and the workflow's run number
+        // (`release.yml`), so a published `versionCode` increases by itself — the one
+        // thing an app store will not accept twice. A debug or local build keeps the
+        // literals, because neither variable is set for it.
+        versionCode = System.getenv("RUMO_VERSION_CODE")?.toIntOrNull()?.takeIf { it > 0 } ?: 1
+        versionName = System.getenv("RUMO_VERSION_NAME")?.removePrefix("v")?.takeIf { it.isNotBlank() } ?: "0.1"
+    }
+
+    signingConfigs {
+        // All four values or none: a config assembled from a partial environment would
+        // fail somewhere inside AGP's signing step, which is a worse place to learn that
+        // a secret is missing. Its absence leaves the release unsigned — the honest
+        // outcome for anything that is not a release.
+        if (releaseSigningAvailable) {
+            create("release") {
+                storeFile = releaseKeystoreFile
+                storePassword = releaseStorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+            }
+        }
     }
 
     buildTypes {
         release {
             isMinifyEnabled = false
+            // Null when the secrets were absent. `debug` is deliberately never
+            // assigned anything here: AGP gives it the standard debug keystore, and a
+            // debug build signed with the release key is the one mistake this file
+            // must not make.
+            signingConfig = signingConfigs.findByName("release")
         }
         debug {
             isMinifyEnabled = false

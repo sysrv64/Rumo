@@ -1,0 +1,130 @@
+{
+  "labels": [
+    {
+      "name": "bug",
+      "color": "d73a4a",
+      "description": "Confirmed bug: the reported behaviour is real and the report carried the device details and, where they are required, the logs",
+      "applies_to": ["issue"]
+    },
+    {
+      "name": "enhancement",
+      "color": "a2eeef",
+      "description": "A well-reasoned proposal for an improvement or new functionality",
+      "applies_to": ["issue"]
+    },
+    {
+      "name": "question",
+      "color": "d876e3",
+      "description": "A genuine question about using or understanding the application, not a bug report",
+      "applies_to": ["issue"]
+    },
+    {
+      "name": "invalid",
+      "color": "e4e669",
+      "description": "Filed in good faith, but the claim is not confirmed by the code, is user error, or asks for something the project deliberately does not do",
+      "applies_to": ["issue"]
+    },
+    {
+      "name": "needs-info",
+      "color": "d4c5f9",
+      "description": "Not enough to reach a conclusion: missing device details, missing shell version, missing logs for a renderer report, or no reproduction steps",
+      "applies_to": ["issue"]
+    },
+    {
+      "name": "needs-logs",
+      "color": "f9d0c4",
+      "description": "A rendering, preview, effects, export or performance report with no logs from the moment of the problem. In-app logs do not exist for a crash — LogFox or adb output is required instead",
+      "applies_to": ["issue"]
+    },
+    {
+      "name": "duplicate",
+      "color": "cfd3d7",
+      "description": "Looks like an already-existing issue or pull request",
+      "applies_to": ["issue", "pull_request"]
+    },
+    {
+      "name": "docs",
+      "color": "0075ca",
+      "description": "About documentation, not code",
+      "applies_to": ["issue", "pull_request"]
+    },
+    {
+      "name": "good-pr",
+      "color": "0e8a16",
+      "description": "A solid pull request: clear diff, states where it was tested, screenshots attached if the interface changed, follows the conventions",
+      "applies_to": ["pull_request"]
+    },
+    {
+      "name": "needs-work",
+      "color": "fbca04",
+      "description": "A legitimate pull request whose diff has problems: no test result, no screenshots for a UI change, a stale comment deleted, a hardcoded string, or logic in the wrong layer",
+      "applies_to": ["pull_request"]
+    },
+    {
+      "name": "trash",
+      "color": "b60205",
+      "description": "Junk: spam, advertising, abuse, no real content, bots",
+      "applies_to": ["issue", "pull_request"]
+    },
+    {
+      "name": "spam",
+      "color": "5319e7",
+      "description": "Flooding: too many issues from the same author in a short time (mechanical antispam, not AI)",
+      "applies_to": ["issue"]
+    },
+    {
+      "name": "moderation-removed",
+      "color": "000000",
+      "description": "Content removed automatically: personal data (doxxing) and/or severe targeted abuse (mechanical moderation action, not a quality label)",
+      "applies_to": ["issue", "pull_request"]
+    },
+    {
+      "name": "needs-triage",
+      "color": "cccccc",
+      "description": "Technical fallback label: the model returned a value that is not in this list",
+      "applies_to": ["issue", "pull_request"]
+    },
+    {
+      "name": "soc-snapdragon",
+      "color": "2b6cb0",
+      "description": "Device detail: Qualcomm Snapdragon. Applied from the report, never guessed when the chip is unclear",
+      "applies_to": ["issue"]
+    },
+    {
+      "name": "soc-exynos",
+      "color": "1f7a5c",
+      "description": "Device detail: Samsung Exynos",
+      "applies_to": ["issue"]
+    },
+    {
+      "name": "soc-tensor",
+      "color": "8a5cf6",
+      "description": "Device detail: Google Tensor",
+      "applies_to": ["issue"]
+    },
+    {
+      "name": "soc-mtk",
+      "color": "d97706",
+      "description": "Device detail: MediaTek, Dimensity or Helio",
+      "applies_to": ["issue"]
+    },
+    {
+      "name": "soc-kirin",
+      "color": "9d174d",
+      "description": "Device detail: HiSilicon Kirin",
+      "applies_to": ["issue"]
+    },
+    {
+      "name": "soc-unisoc",
+      "color": "4b5563",
+      "description": "Device detail: Unisoc",
+      "applies_to": ["issue"]
+    },
+    {
+      "name": "soc-unclear",
+      "color": "6b7280",
+      "description": "Device detail: the report does not say which chip, or it is one this list does not cover. The issue stays needs-info until it does — a renderer report without the chip cannot be reproduced",
+      "applies_to": ["issue"]
+    }
+  ]
+}

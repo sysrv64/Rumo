@@ -1,0 +1,83 @@
+# Triage of issues and pull requests.
+#
+# `pull_request_target`, not `pull_request`: the bot needs write access to label
+# a pull request that comes from a fork, and it only ever gets that from the
+# target branch's context. Do not add a checkout of the PR's head to this job —
+# the bot reads the diff and the cited files through the GitHub API and never
+# executes the contribution. Checking out the head here would turn a fork's
+# first pull request into arbitrary code execution with write permissions.
+name: AI triage
+
+on:
+  issues:
+    types: [opened]
+  pull_request_target:
+    types: [opened]
+  issue_comment:
+    types: [created]
+
+# Least privilege for what is actually switched on below. `discussions: write`
+# and `actions: write` are deliberately absent: the Q&A and workflow-dispatch
+# features are off, and a permission granted for a feature nobody enabled is
+# just a larger blast radius.
+permissions:
+  issues: write
+  pull-requests: write
+  contents: write
+
+# One triage per issue or pull request at a time, and never cancelled: a run
+# that is cut off half way can leave an item labelled but unanswered.
+concurrency:
+  group: ai-triage-${{ github.event.issue.number || github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  triage:
+    # The prompt this action is given is `.github/ai-triage/repo_context.md`,
+    # and the labels it may apply are `.github/ai-triage/labels.json`. Both are
+    # part of the repository: a report is judged against the rules written
+    # there, so changing the rules is a change to this file's neighbours.
+    runs-on: ubuntu-latest
+    steps:
+      # The base branch, so the action can read the repository's own files.
+      # Never the pull request's head — see the note at the top.
+      - uses: actions/checkout@v7
+
+      - uses: sysv86/ai-triage-bot@v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          gemini-api-keys: ${{ secrets.GEMINI_API_KEYS }}
+
+          # Duplicates: on. It is the cheapest work the bot does, and the
+          # alternative is a human reading the same report twice.
+          duplicate-detection-enabled: true
+
+          # Screenshots and logs are what a report is judged on, so the bot has
+          # to be able to read a few. Four is enough for a before/after pair and
+          # a log file.
+          max-attachments: 4
+          max-files: 4
+
+          # Antispam and the circuit breaker, stated rather than inherited, so a
+          # change to the action's defaults cannot change this repository's
+          # behaviour silently.
+          spam-window-minutes: 60
+          spam-threshold: 5
+          max-api-calls: 60
+
+          # Everything below is off, and says why. Turning any of them on is a
+          # deliberate act, not a default that drifted.
+          #
+          # discussions-enabled:      questions go to the repository's
+          #                            Discussions through the issue form's
+          #                            contact link; a second Q&A surface inside
+          #                            issues is a second place to miss.
+          # agent-enabled:            an assistant that opens pull requests on
+          #                            command needs a maintainer watching the
+          #                            queue; not yet.
+          # commit-review-enabled:    noise on a repository this size.
+          # workflow-dispatch-enabled: dispatching workflows from a comment is
+          #                            a large permission for a small convenience.
+          # moderation-token:         real deletion and blocking need a PAT with
+          #                            elevated scope; removal and labelling
+          #                            already work without it.

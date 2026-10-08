@@ -1,0 +1,243 @@
+# Release: builds the `.so`, signs the APK and the AAB, and attaches them to a
+# GitHub release.
+#
+# There is deliberately no `pull_request` trigger here, and no `pull_request_target`
+# either. Everything a release needs — the keystore, its password, write access to
+# the repository — has to be unreachable from a pull request, and the only way to
+# guarantee that is for this file never to run for one. The debug APK a pull request
+# is allowed to build is built by ci.yml, which holds no signing secret at all.
+#
+# `workflow_dispatch` runs the ref it is dispatched on, *including that ref's own
+# copy of this file*, with the secrets. Dispatch from a tag or from `master`; never
+# from a branch someone else opened, because that branch supplies the workflow.
+name: Release
+
+on:
+  push:
+    # `v0.1`, `v1.0.0`, …
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  # To create the release and attach the assets to it.
+  contents: write
+
+env:
+  # Must stay in step with ci.yml: the revision AGENTS.md's `.so` recipe is written
+  # against, and therefore the source of the include paths passed to rustc below.
+  ANDROID_NDK_VERSION: 30.0.14904198
+
+jobs:
+  release:
+    name: Signed release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out, with the ai-engines submodule
+        uses: actions/checkout@v7
+        with:
+          # `:app` depends on `:ai-engines`, which lives in the submodule; without it
+          # Gradle cannot configure the build at all.
+          submodules: recursive
+          # Only needed if AI-Engines is private: this workflow's own token cannot
+          # read another private repository. Left unset, the default is used.
+          token: ${{ secrets.SUBMODULE_TOKEN || github.token }}
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Set up the Android SDK and NDK
+        run: |
+          # `cargo ndk` never inherits Gradle's SDK location, and the NDK the recipe
+          # links against is not in the runner image. Both are exported for the rest
+          # of the job here, so nothing downstream has to guess where they are.
+          sdk="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-}}"
+          if [ -z "$sdk" ]; then
+            for d in /usr/local/lib/android/sdk "$HOME/Android/Sdk" /opt/android-sdk; do
+              [ -d "$d" ] && sdk="$d" && break
+            done
+          fi
+          [ -n "$sdk" ] || { echo "::error::no Android SDK on this runner"; exit 1; }
+
+          # AGP downloads the platform and build-tools it needs into the SDK
+          # directory, and sdkmanager installs the NDK there: an SDK directory this
+          # user cannot write to breaks both.
+          [ -w "$sdk" ] || sudo chown -R "$(id -u):$(id -g)" "$sdk"
+
+          sdkmanager="$sdk/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -x "$sdkmanager" ]; then
+            sdkmanager="$(command -v sdkmanager || true)"
+          fi
+          [ -n "$sdkmanager" ] || { echo "::error::sdkmanager not found"; exit 1; }
+
+          # sdkmanager installs nothing before the licences are accepted.
+          yes | "$sdkmanager" --licenses > /dev/null || true
+
+          # The revision is a preview, and a preview's package id is not always its
+          # directory name — hence the second attempt.
+          "$sdkmanager" --install "ndk;$ANDROID_NDK_VERSION" \
+            || "$sdkmanager" --install "ndk;$ANDROID_NDK_VERSION-beta1" \
+            || { echo "::error::could not install ndk;$ANDROID_NDK_VERSION (the -beta1 id was tried too)"; exit 1; }
+
+          ndk="$sdk/ndk/$ANDROID_NDK_VERSION"
+          [ -d "$ndk" ] || { echo "::error::NDK did not land in $ndk"; exit 1; }
+
+          {
+            echo "ANDROID_SDK_ROOT=$sdk"
+            echo "ANDROID_HOME=$sdk"
+            echo "ANDROID_NDK_HOME=$ndk"
+          } >> "$GITHUB_ENV"
+          {
+            echo "$sdk/cmdline-tools/latest/bin"
+            echo "$sdk/platform-tools"
+          } >> "$GITHUB_PATH"
+
+      - name: Install the pinned Rust toolchain and the Android target
+        run: |
+          # The channel is read out of rust-toolchain.toml rather than repeated, so
+          # the pin lives in exactly one place and rustup honours it for every cargo
+          # call that follows.
+          channel="$(sed -n 's/^channel[[:space:]]*=[[:space:]]*"\(.*\)"/\1/p' rust-toolchain.toml)"
+          rustup toolchain install "$channel" --component rustfmt --component clippy
+          rustup target add --toolchain "$channel" aarch64-linux-android
+
+      - name: Cache the cargo registry and target directory
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rumo-rs
+
+      - name: Install cargo-ndk
+        run: |
+          # 4.1.2 is the version the recipe was verified against; cargo reads that as
+          # `^4.1.2`.
+          command -v cargo-ndk > /dev/null 2>&1 || cargo install cargo-ndk --locked --version 4.1.2
+
+      - name: Build librumo_bridge.so (arm64, release)
+        working-directory: rumo-rs
+        run: |
+          # Copied from AGENTS.md, "Building the `.so` (arm64)", with `--release`
+          # added so the shipped library is the optimised one. The sysroot and the
+          # unwinder directory have to be passed explicitly or `cargo ndk` fails at
+          # the link step.
+          NDK="$ANDROID_NDK_HOME"
+          export CARGO_TARGET_AARCH64_LINUX_ANDROID_RUSTFLAGS="-L $NDK/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/26 -L $NDK/toolchains/llvm/prebuilt/linux-x86_64/lib/clang/21/lib/linux/aarch64"
+          cargo ndk -t arm64-v8a -o ../app/src/main/jniLibs build --lib --release -j1
+
+      - name: Strip debug info from the .so
+        working-directory: rumo-rs
+        run: |
+          # Copied from AGENTS.md, "Strip the library after building". `--strip-debug`
+          # keeps `.symtab`, so a backtrace from a shipped build still names functions.
+          SO=../app/src/main/jniLibs/arm64-v8a/librumo_bridge.so
+          [ -f "$SO" ] || { echo "::error::$SO was not produced"; exit 1; }
+          for c in "$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip" \
+                   llvm-strip aarch64-linux-gnu-strip; do
+            command -v "$c" > /dev/null 2>&1 || continue
+            "$c" --version > /dev/null 2>&1 || continue
+            if "$c" --strip-debug "$SO"; then
+              echo "stripped $SO with $c"
+              ls -l "$SO"
+              exit 0
+            fi
+          done
+          echo "::error::no working strip tool, so the .so would be packaged unstripped" >&2
+          exit 1
+
+      - name: Check the signing secrets are present
+        env:
+          RUMO_KEYSTORE_BASE64: ${{ secrets.RUMO_KEYSTORE_BASE64 }}
+          RUMO_KEYSTORE_PASSWORD: ${{ secrets.RUMO_KEYSTORE_PASSWORD }}
+          RUMO_KEY_ALIAS: ${{ secrets.RUMO_KEY_ALIAS }}
+          RUMO_KEY_PASSWORD: ${{ secrets.RUMO_KEY_PASSWORD }}
+        run: |
+          # Without the material Gradle creates no signing config, leaves the release
+          # unsigned and still succeeds — a release that looks built. Stop before
+          # anything is compiled instead.
+          missing=""
+          for name in RUMO_KEYSTORE_BASE64 RUMO_KEYSTORE_PASSWORD RUMO_KEY_ALIAS RUMO_KEY_PASSWORD; do
+            [ -n "${!name}" ] || missing="$missing $name"
+          done
+          [ -z "$missing" ] || { echo "::error::these secrets are unset or empty:$missing"; exit 1; }
+
+      - name: Decode the keystore
+        env:
+          RUMO_KEYSTORE_BASE64: ${{ secrets.RUMO_KEYSTORE_BASE64 }}
+        run: |
+          # The keystore exists for the life of this job only, and only under
+          # $RUNNER_TEMP: never inside the checkout, so no artifact glob and no cached
+          # directory can pick it up. The password reaches Gradle as an environment
+          # variable, never as an argument, which every process on the machine can
+          # read out of its command line.
+          umask 077
+          printf '%s' "$RUMO_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/rumo-release.jks"
+          echo "RUMO_KEYSTORE_FILE=$RUNNER_TEMP/rumo-release.jks" >> "$GITHUB_ENV"
+
+      - name: Build and sign the release APK and AAB
+        env:
+          RUMO_KEYSTORE_PASSWORD: ${{ secrets.RUMO_KEYSTORE_PASSWORD }}
+          RUMO_KEY_ALIAS: ${{ secrets.RUMO_KEY_ALIAS }}
+          RUMO_KEY_PASSWORD: ${{ secrets.RUMO_KEY_PASSWORD }}
+          # The tag names the version; the run number keeps `versionCode` increasing
+          # by itself, which is the one thing an app store will not accept twice.
+          RUMO_VERSION_NAME: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || '0.1' }}
+          RUMO_VERSION_CODE: ${{ github.run_number }}
+        run: |
+          # `-x cargoBuildRelease`: the release `.so` was built and stripped above.
+          # `cargoBuild` would already be skipped by its own guard, because the
+          # requested task names contain "Release"; excluding it here too means the
+          # release path does not depend on that guard.
+          sh gradlew :app:assembleRelease :app:bundleRelease \
+            -x cargoBuild -x cargoBuildRelease \
+            --console=plain --no-daemon
+
+      - name: Verify the release is signed with the release key
+        run: |
+          # Gradle succeeds whether or not a signing config exists, so this is the only
+          # thing between the pipeline and a published unsigned build. `apksigner
+          # verify` fails on an unsigned APK.
+          apk="$(find app/build/outputs/apk/release -maxdepth 1 -name '*.apk' | head -n 1)"
+          [ -n "$apk" ] || { echo "::error::no release APK was produced"; exit 1; }
+          case "$apk" in
+            *unsigned*) echo "::error::$apk is unsigned — the signing secrets did not reach Gradle"; exit 1 ;;
+          esac
+
+          apksigner="$(find "$ANDROID_SDK_ROOT/build-tools" -maxdepth 2 -name apksigner -type f | sort -V | tail -n 1)"
+          [ -n "$apksigner" ] || { echo "::error::no apksigner in $ANDROID_SDK_ROOT/build-tools"; exit 1; }
+          "$apksigner" verify --print-certs "$apk"
+
+          # `CN=Android Debug` is the debug keystore AGP generates. If that signed
+          # this APK, the release went out under the wrong key.
+          if "$apksigner" verify --print-certs "$apk" | grep -q 'CN=Android Debug'; then
+            echo "::error::$apk is signed with the Android debug key, not the release key"
+            exit 1
+          fi
+
+      - name: Upload the signed APK and the AAB
+        uses: actions/upload-artifact@v7
+        with:
+          name: rumo-release
+          path: |
+            app/build/outputs/apk/release/*.apk
+            app/build/outputs/bundle/release/*.aab
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Attach the artifacts to the GitHub release
+        # A dispatch from a branch produces artifacts to look at, not a release.
+        if: github.ref_type == 'tag'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # `gh` is on the runner image, so attaching the files costs one fewer action
+          # version to keep current. `--clobber` lets a re-run of a tagged build
+          # replace the assets instead of failing on the ones already there.
+          gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1 \
+            || gh release create "$GITHUB_REF_NAME" --title "Rumo $GITHUB_REF_NAME" --generate-notes
+          gh release upload "$GITHUB_REF_NAME" --clobber \
+            app/build/outputs/apk/release/*.apk \
+            app/build/outputs/bundle/release/*.aab

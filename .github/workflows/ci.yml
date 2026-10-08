@@ -1,0 +1,209 @@
+# Continuous integration: the Rust test gate and the debug APK.
+#
+# Nothing here can sign anything. This is the workflow a pull request reaches, and
+# a `pull_request` opened from a branch of this repository *does* receive the
+# repository secrets — so one `secrets.RUMO_*` reference below would hand the
+# release key to a branch that has not been reviewed. All signing lives in
+# release.yml, which has no `pull_request` trigger at all.
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+# The jobs only read the repository.
+permissions:
+  contents: read
+
+concurrency:
+  # A newer push to the same ref makes the older run pointless.
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # The NDK revision AGENTS.md's `.so` recipe is written against. It is not part of
+  # the runner image, so it is installed below. Changing it means changing the
+  # recipe's include paths in the same commit.
+  ANDROID_NDK_VERSION: 30.0.14904198
+
+jobs:
+  rust-tests:
+    name: Rust tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out, with the ai-engines submodule
+        uses: actions/checkout@v7
+        with:
+          # `:app` depends on `:ai-engines`, which lives in the submodule; without
+          # it Gradle cannot configure the build at all.
+          submodules: recursive
+          # Only needed if AI-Engines is private: this workflow's own token cannot
+          # read another private repository. Left unset, the default is used.
+          token: ${{ secrets.SUBMODULE_TOKEN || github.token }}
+
+      - name: Install the pinned Rust toolchain
+        run: |
+          # The channel is read out of rust-toolchain.toml rather than repeated, so
+          # the pin lives in exactly one place and rustup honours it for every cargo
+          # call that follows.
+          channel="$(sed -n 's/^channel[[:space:]]*=[[:space:]]*"\(.*\)"/\1/p' rust-toolchain.toml)"
+          rustup toolchain install "$channel" --component rustfmt --component clippy
+
+      - name: Cache the cargo registry and target directory
+        uses: Swatinem/rust-cache@v2
+        with:
+          # The workspace is not at the repository root. rust-cache keys every cache
+          # by job id as well, so this job and the APK job never read each other's.
+          workspaces: rumo-rs
+
+      - name: cargo test --workspace
+        working-directory: rumo-rs
+        run: |
+          # The gate. GPU and hardware tests are `#[ignore]` on purpose: a build host
+          # has no adapter, and running one produces SIGILL rather than a useful
+          # failure.
+          cargo test --workspace -j2
+
+  android-debug:
+    name: Android debug APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out, with the ai-engines submodule
+        uses: actions/checkout@v7
+        with:
+          submodules: recursive
+          token: ${{ secrets.SUBMODULE_TOKEN || github.token }}
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v6
+        with:
+          # AGP 9 and Gradle 9 both need 17 or newer; 21 is the LTS the project is
+          # developed against.
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          # Submitting the dependency graph needs `contents: write`, and this
+          # workflow holds `contents: read` deliberately.
+          dependency-graph: false
+
+      - name: Set up the Android SDK and NDK
+        run: |
+          # `cargo ndk` never inherits Gradle's SDK location, and the NDK the recipe
+          # links against is not in the runner image. Both are exported for the rest
+          # of the job here, so nothing downstream has to guess where they are.
+          sdk="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-}}"
+          if [ -z "$sdk" ]; then
+            for d in /usr/local/lib/android/sdk "$HOME/Android/Sdk" /opt/android-sdk; do
+              [ -d "$d" ] && sdk="$d" && break
+            done
+          fi
+          [ -n "$sdk" ] || { echo "::error::no Android SDK on this runner"; exit 1; }
+
+          # AGP downloads the platform and build-tools it needs into the SDK
+          # directory, and sdkmanager installs the NDK there: an SDK directory this
+          # user cannot write to breaks both.
+          [ -w "$sdk" ] || sudo chown -R "$(id -u):$(id -g)" "$sdk"
+
+          sdkmanager="$sdk/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -x "$sdkmanager" ]; then
+            sdkmanager="$(command -v sdkmanager || true)"
+          fi
+          [ -n "$sdkmanager" ] || { echo "::error::sdkmanager not found"; exit 1; }
+
+          # sdkmanager installs nothing before the licences are accepted.
+          yes | "$sdkmanager" --licenses > /dev/null || true
+
+          # The revision is a preview, and a preview's package id is not always its
+          # directory name — hence the second attempt.
+          "$sdkmanager" --install "ndk;$ANDROID_NDK_VERSION" \
+            || "$sdkmanager" --install "ndk;$ANDROID_NDK_VERSION-beta1" \
+            || { echo "::error::could not install ndk;$ANDROID_NDK_VERSION (the -beta1 id was tried too)"; exit 1; }
+
+          ndk="$sdk/ndk/$ANDROID_NDK_VERSION"
+          [ -d "$ndk" ] || { echo "::error::NDK did not land in $ndk"; exit 1; }
+
+          {
+            echo "ANDROID_SDK_ROOT=$sdk"
+            echo "ANDROID_HOME=$sdk"
+            echo "ANDROID_NDK_HOME=$ndk"
+          } >> "$GITHUB_ENV"
+          {
+            echo "$sdk/cmdline-tools/latest/bin"
+            echo "$sdk/platform-tools"
+          } >> "$GITHUB_PATH"
+
+      - name: Install the pinned Rust toolchain and the Android target
+        run: |
+          # Same read of rust-toolchain.toml as above; the aarch64 target is what the
+          # `.so` is built for, and rustup does not install it by default.
+          channel="$(sed -n 's/^channel[[:space:]]*=[[:space:]]*"\(.*\)"/\1/p' rust-toolchain.toml)"
+          rustup toolchain install "$channel" --component rustfmt --component clippy
+          rustup target add --toolchain "$channel" aarch64-linux-android
+
+      - name: Cache the cargo registry and target directory
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rumo-rs
+
+      - name: Install cargo-ndk
+        run: |
+          # Cached by the step above along with $CARGO_HOME/bin, so this compiles
+          # once per cache generation. 4.1.2 is the version the recipe was verified
+          # against; cargo reads that as `^4.1.2`.
+          command -v cargo-ndk > /dev/null 2>&1 || cargo install cargo-ndk --locked --version 4.1.2
+
+      - name: Build librumo_bridge.so (arm64, debug)
+        working-directory: rumo-rs
+        run: |
+          # Copied from AGENTS.md, "Building the `.so` (arm64)". The sysroot and the
+          # unwinder directory have to be passed explicitly or `cargo ndk` fails at
+          # the link step; `cargo build --target aarch64-linux-android` with a
+          # `--sysroot` instead breaks the std search with E0463.
+          NDK="$ANDROID_NDK_HOME"
+          export CARGO_TARGET_AARCH64_LINUX_ANDROID_RUSTFLAGS="-L $NDK/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/26 -L $NDK/toolchains/llvm/prebuilt/linux-x86_64/lib/clang/21/lib/linux/aarch64"
+          cargo ndk -t arm64-v8a -o ../app/src/main/jniLibs build --lib -j1
+
+      - name: Strip debug info from the .so
+        working-directory: rumo-rs
+        run: |
+          # Copied from AGENTS.md, "Strip the library after building". A dev-profile
+          # `.so` carries about 230 MB of DWARF on top of ~38 MB of code, and without
+          # this the APK is 300 MB instead of 70. `--strip-debug` keeps `.symtab`, so
+          # a backtrace still names functions.
+          SO=../app/src/main/jniLibs/arm64-v8a/librumo_bridge.so
+          [ -f "$SO" ] || { echo "::error::$SO was not produced"; exit 1; }
+          for c in "$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip" \
+                   llvm-strip aarch64-linux-gnu-strip; do
+            # The `--version` probe is not decoration: a strip tool built for the
+            # wrong host dies with SIGILL, and probing rules it out before it can
+            # take the step down.
+            command -v "$c" > /dev/null 2>&1 || continue
+            "$c" --version > /dev/null 2>&1 || continue
+            if "$c" --strip-debug "$SO"; then
+              echo "stripped $SO with $c"
+              ls -l "$SO"
+              exit 0
+            fi
+          done
+          echo "::error::no working strip tool, so the .so would be packaged unstripped" >&2
+          exit 1
+
+      - name: Build the debug APK
+        run: |
+          # `-x cargoBuild` is deliberate: the `.so` was built and stripped above,
+          # and letting Gradle rebuild it compiles the whole Rust graph a second time
+          # under a different fingerprint.
+          sh gradlew :app:assembleDebug -x cargoBuild --console=plain --no-daemon
+
+      - name: Upload the debug APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: rumo-debug-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
+          # A missing APK must fail the job rather than pass with no artifact.
+          if-no-files-found: error
+          retention-days: 14

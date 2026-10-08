@@ -1,0 +1,144 @@
+name: Bug report
+description: Something is broken, wrong, or crashes. Read the rules in the box below first — issues that skip them are closed automatically.
+title: "[Bug] "
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ### Before you write anything
+
+        **Read this, or the bot will close your issue without a human seeing it.**
+
+        - The phone model, the Android version and the **vendor shell** are required.
+          `Android 14` is not a shell. Write the one your phone actually runs:
+          One UI, HyperOS, MIUI, ColorOS, OxygenOS, Funtouch, MagicOS, EMUI,
+          Realme UI, stock AOSP — with its version.
+        - Pick the **chip vendor** below. A phone is not a chip, and the renderer
+          behaves differently on each.
+        - **Logs from the app's Settings are required for anything about rendering,
+          the preview, effects, export or performance.** They must be captured
+          **while the problem is happening** — not after leaving the editor and
+          coming back, because the state that caused it is gone by then.
+          For a pure UI problem (a label in the wrong place, a button that does
+          nothing) logs are welcome but not required.
+        - **If the app crashes, the in-app logs cannot help you** — the process is
+          gone before it can write them. Use LogFox (or MatLog) or `adb logcat`
+          and attach that instead.
+        - A renderer bug without logs is not diagnosable. It will be labelled
+          `needs-info` and closed if the logs never arrive.
+
+  - type: input
+    id: phone
+    attributes:
+      label: Phone model
+      description: Exactly as it is written on the device or in Settings → About phone. "Xiaomi" is a brand, not a model.
+      placeholder: e.g. Redmi Note 13 Pro 5G, SM-S928B, Pixel 8a
+    validations:
+      required: true
+
+  - type: input
+    id: android
+    attributes:
+      label: Android version
+      description: Settings → About phone → Android version.
+      placeholder: e.g. Android 14 (API 34)
+    validations:
+      required: true
+
+  - type: input
+    id: shell
+    attributes:
+      label: Vendor shell and its version
+      description: Not "Android". The thing the vendor put on top of it.
+      placeholder: e.g. HyperOS 2.0.4.0, One UI 6.1, ColorOS 15, stock AOSP
+    validations:
+      required: true
+
+  - type: dropdown
+    id: chip
+    attributes:
+      label: Chip vendor
+      description: The SoC maker. Wrong choices are corrected by the bot and the issue is re-labelled.
+      options:
+        - Qualcomm Snapdragon
+        - Samsung Exynos
+        - Google Tensor
+        - MediaTek (Dimensity / Helio)
+        - HiSilicon Kirin
+        - Unisoc
+        - Other / not sure
+    validations:
+      required: true
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What kind of problem is it
+      description: This decides whether logs are required.
+      options:
+        - Rendering, preview, effects or export — logs required
+        - Crash or force close — LogFox or adb logs required
+        - Editor, timeline or animation behaviour
+        - Interface, layout or labels — logs not required
+        - Installation, updates or the shop
+        - Something else
+    validations:
+      required: true
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happens, and what you expected instead
+      description: One problem per issue. Say what you did, what appeared, and what you expected.
+      placeholder: |
+        I set a blur on the background layer and moved the playhead to 4 s.
+        The preview goes black, but the export is fine.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Numbered, starting from a clean launch of the app. If it does not reproduce every time, say how often it does.
+      placeholder: |
+        1. Open a new project
+        2. Add a shape
+        3. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: |
+        From Settings → Diagnostics → Save logs to Download, captured **during** the problem.
+        For a crash use LogFox or `adb logcat -d > log.txt` instead, and say which one you used.
+        Drag the files into this box.
+      placeholder: Attach the .zip from Diagnostics, or the logcat file. Say which tool produced it.
+    validations:
+      required: false
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots or a screen recording
+      description: For anything visual. Without one, a layout problem cannot be checked.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: Confirmations
+      options:
+        - label: The phone model, Android version and shell above are the ones actually in use, not an example I copied.
+          required: true
+        - label: The logs, if the problem is about rendering, the preview, effects, export or a crash, were captured while the problem was happening.
+          required: true
+        - label: I searched the open and closed issues and this is not a duplicate.
+          required: true
+        - label: This is about Rumo itself, not about a phone or a shell that will not install it.
+          required: true

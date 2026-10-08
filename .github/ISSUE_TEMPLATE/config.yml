@@ -1,0 +1,15 @@
+# Blank issues are off on purpose.
+#
+# Every issue in this repository arrives through a form, because the two things
+# that make a report diagnosable — the device it happened on and the logs from
+# the moment it happened — are exactly the two things a blank text box does not
+# ask for. A blank issue is closed with a pointer to the forms.
+blank_issues_enabled: false
+
+contact_links:
+  - name: Security problem
+    url: https://github.com/sysrv64/Rumo/security/advisories/new
+    about: Report a vulnerability privately rather than in an issue.
+  - name: Question or an idea that is not a request
+    url: https://github.com/sysrv64/Rumo/discussions
+    about: Ask here. Issues are for reports and requests, not for conversation.

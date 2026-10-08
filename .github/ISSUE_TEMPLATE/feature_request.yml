@@ -1,0 +1,49 @@
+name: Feature request
+description: Something Rumo should do and does not. For "it broke", use the bug form instead.
+title: "[Feature] "
+labels: ["enhancement", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        A feature request does not need a device report — it is about what Rumo
+        should do, not about what your phone does to it. Keep it to the problem
+        and the shape of the answer; a design is not required, but a request that
+        cannot be argued with is one that cannot be built.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do that you cannot
+      description: Describe the work, not the widget. "I cannot line two captions up" is a better start than "add a snap button".
+      placeholder: |
+        I want a title to appear only while a specific layer is on screen, and
+        the timeline gives me no way to tie the two together.
+    validations:
+      required: true
+
+  - type: textarea
+    id: idea
+    attributes:
+      label: How you imagine it working
+      description: Optional, and usually more useful than it looks — it says which part of the interface you went looking in.
+    validations:
+      required: false
+
+  - type: textarea
+    id: alternative
+    attributes:
+      label: What you do instead today
+      description: The workaround you already have, and what it costs you. This is often the strongest part of a request.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: Confirmations
+      options:
+        - label: I searched the open and closed issues and this is not already asked for.
+          required: true
+        - label: This is a request about Rumo, not a request for help with another application.
+          required: true
