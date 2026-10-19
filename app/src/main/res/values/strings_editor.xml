@@ -496,4 +496,52 @@
     <string name="panel_nodes_reset">Reset</string>
     <string name="panel_nodes_close">Close node graph</string>
 
+
+    <!-- ===================== Wave 1 NLE & UI Redesign ===================== -->
+    <string name="editor_step_back">Previous frame</string>
+    <string name="editor_step_forward">Next frame</string>
+    <string name="editor_loop_playback">Loop playback</string>
+    <string name="editor_toggle_grid">Composition grid</string>
+    <string name="editor_quick_split">Split</string>
+    <string name="editor_quick_duplicate">Duplicate</string>
+    <string name="editor_quick_keyframe">Keyframe</string>
+    <string name="editor_quick_prev_key">Prev key</string>
+    <string name="editor_quick_next_key">Next key</string>
+    <string name="editor_quick_center">Center</string>
+    <string name="editor_quick_reset">Reset</string>
+    <string name="editor_timeline_zoom_in">Zoom in timeline</string>
+    <string name="editor_timeline_zoom_out">Zoom out timeline</string>
+    <string name="editor_timeline_expand_tracks">Expand tracks</string>
+    <string name="editor_dock_compact">Compact</string>
+    <string name="editor_dock_half">Half</string>
+    <string name="editor_dock_full">Expand</string>
+    <string name="panel_inspector_scale">Scale</string>
+    <string name="panel_inspector_start_time">Start time</string>
+    <string name="panel_inspector_center_x">Center X</string>
+    <string name="panel_inspector_center_y">Center Y</string>
+    <string name="panel_inspector_reset_transform">Reset transform</string>
+    <string name="panel_inspector_section_keyframes">Keyframes &amp; Curves</string>
+    <string name="panel_inspector_section_transition">Transition</string>
+    <string name="panel_inspector_track_rotation">Rotation</string>
+    <string name="panel_inspector_track_scale">Scale</string>
+    <string name="panel_inspector_track_pos_x">Position X</string>
+    <string name="panel_inspector_track_pos_y">Position Y</string>
+    <string name="panel_inspector_track_opacity">Opacity</string>
+    <string name="panel_inspector_clear_keys">Clear track</string>
+    <string name="panel_inspector_curve_linear">Linear</string>
+    <string name="panel_inspector_curve_hold">Hold</string>
+    <string name="panel_inspector_curve_smooth">Smooth</string>
+    <string name="panel_inspector_curve_ease_in">Ease In</string>
+    <string name="panel_inspector_curve_ease_out">Ease Out</string>
+    <string name="panel_inspector_curve_ease_in_out">Ease In-Out</string>
+    <string name="panel_inspector_curve_hint">Drag P1 / P2 handles to shape outgoing curve from %1$s</string>
+    <string name="panel_inspector_filter_all">All</string>
+    <string name="panel_inspector_filter_transform">Transform</string>
+    <string name="panel_inspector_filter_style">Style</string>
+    <string name="panel_inspector_filter_effects">Effects</string>
+    <string name="panel_inspector_filter_timing">Timing</string>
+    <string name="panel_layers_duplicate">Duplicate layer</string>
+    <string name="panel_layers_split">Split at playhead</string>
+    <string name="panel_layers_move_up">Move up</string>
+    <string name="panel_layers_move_down">Move down</string>
 </resources>

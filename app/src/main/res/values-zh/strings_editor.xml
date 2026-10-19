@@ -465,4 +465,52 @@
     <string name="panel_nodes_reset">重置</string>
     <string name="panel_nodes_close">关闭节点图</string>
 
+
+    <!-- ===================== Wave 1 NLE & UI Redesign ===================== -->
+    <string name="editor_step_back">上一帧</string>
+    <string name="editor_step_forward">下一帧</string>
+    <string name="editor_loop_playback">循环播放</string>
+    <string name="editor_toggle_grid">构图网格</string>
+    <string name="editor_quick_split">分割</string>
+    <string name="editor_quick_duplicate">复制</string>
+    <string name="editor_quick_keyframe">关键帧</string>
+    <string name="editor_quick_prev_key">上一关键帧</string>
+    <string name="editor_quick_next_key">下一关键帧</string>
+    <string name="editor_quick_center">居中</string>
+    <string name="editor_quick_reset">重置</string>
+    <string name="editor_timeline_zoom_in">放大时间轴</string>
+    <string name="editor_timeline_zoom_out">缩小时间轴</string>
+    <string name="editor_timeline_expand_tracks">展开轨道</string>
+    <string name="editor_dock_compact">紧凑</string>
+    <string name="editor_dock_half">半屏</string>
+    <string name="editor_dock_full">展开</string>
+    <string name="panel_inspector_scale">缩放</string>
+    <string name="panel_inspector_start_time">起始时间</string>
+    <string name="panel_inspector_center_x">水平居中</string>
+    <string name="panel_inspector_center_y">垂直居中</string>
+    <string name="panel_inspector_reset_transform">重置变换</string>
+    <string name="panel_inspector_section_keyframes">关键帧与曲线</string>
+    <string name="panel_inspector_section_transition">转场</string>
+    <string name="panel_inspector_track_rotation">旋转</string>
+    <string name="panel_inspector_track_scale">缩放</string>
+    <string name="panel_inspector_track_pos_x">位置 X</string>
+    <string name="panel_inspector_track_pos_y">位置 Y</string>
+    <string name="panel_inspector_track_opacity">不透明度</string>
+    <string name="panel_inspector_clear_keys">清空轨道</string>
+    <string name="panel_inspector_curve_linear">线性</string>
+    <string name="panel_inspector_curve_hold">定格</string>
+    <string name="panel_inspector_curve_smooth">平滑</string>
+    <string name="panel_inspector_curve_ease_in">缓入</string>
+    <string name="panel_inspector_curve_ease_out">缓出</string>
+    <string name="panel_inspector_curve_ease_in_out">缓入缓出</string>
+    <string name="panel_inspector_curve_hint">拖动 P1 / P2 控制点调整 %1$s 关键帧的出点曲线</string>
+    <string name="panel_inspector_filter_all">全部</string>
+    <string name="panel_inspector_filter_transform">变换</string>
+    <string name="panel_inspector_filter_style">样式</string>
+    <string name="panel_inspector_filter_effects">效果</string>
+    <string name="panel_inspector_filter_timing">时长</string>
+    <string name="panel_layers_duplicate">复制图层</string>
+    <string name="panel_layers_split">在播放头处分割</string>
+    <string name="panel_layers_move_up">上移</string>
+    <string name="panel_layers_move_down">下移</string>
 </resources>

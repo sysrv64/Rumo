@@ -495,4 +495,52 @@
     <string name="panel_nodes_reset">Сбросить</string>
     <string name="panel_nodes_close">Закрыть граф узлов</string>
 
+
+    <!-- ===================== Wave 1 NLE & UI Redesign ===================== -->
+    <string name="editor_step_back">Предыдущий кадр</string>
+    <string name="editor_step_forward">Следующий кадр</string>
+    <string name="editor_loop_playback">Зациклить воспроизведение</string>
+    <string name="editor_toggle_grid">Сетка композиции</string>
+    <string name="editor_quick_split">Разделить</string>
+    <string name="editor_quick_duplicate">Дублировать</string>
+    <string name="editor_quick_keyframe">Ключ</string>
+    <string name="editor_quick_prev_key">Пред. ключ</string>
+    <string name="editor_quick_next_key">След. ключ</string>
+    <string name="editor_quick_center">По центру</string>
+    <string name="editor_quick_reset">Сброс</string>
+    <string name="editor_timeline_zoom_in">Приблизить таймлайн</string>
+    <string name="editor_timeline_zoom_out">Отдалить таймлайн</string>
+    <string name="editor_timeline_expand_tracks">Развернуть дорожки</string>
+    <string name="editor_dock_compact">Компактно</string>
+    <string name="editor_dock_half">Половина</string>
+    <string name="editor_dock_full">Развернуть</string>
+    <string name="panel_inspector_scale">Масштаб</string>
+    <string name="panel_inspector_start_time">Начало</string>
+    <string name="panel_inspector_center_x">Центр X</string>
+    <string name="panel_inspector_center_y">Центр Y</string>
+    <string name="panel_inspector_reset_transform">Сбросить трансформацию</string>
+    <string name="panel_inspector_section_keyframes">Ключевые кадры и кривые</string>
+    <string name="panel_inspector_section_transition">Переход</string>
+    <string name="panel_inspector_track_rotation">Поворот</string>
+    <string name="panel_inspector_track_scale">Масштаб</string>
+    <string name="panel_inspector_track_pos_x">Позиция X</string>
+    <string name="panel_inspector_track_pos_y">Позиция Y</string>
+    <string name="panel_inspector_track_opacity">Непрозрачность</string>
+    <string name="panel_inspector_clear_keys">Очистить дорожку</string>
+    <string name="panel_inspector_curve_linear">Линейная</string>
+    <string name="panel_inspector_curve_hold">Ступень</string>
+    <string name="panel_inspector_curve_smooth">Плавная</string>
+    <string name="panel_inspector_curve_ease_in">Разгон</string>
+    <string name="panel_inspector_curve_ease_out">Торможение</string>
+    <string name="panel_inspector_curve_ease_in_out">Плавно вх/вых</string>
+    <string name="panel_inspector_curve_hint">Тяните точки P1 / P2 для настройки кривой от %1$s</string>
+    <string name="panel_inspector_filter_all">Все</string>
+    <string name="panel_inspector_filter_transform">Трансформ</string>
+    <string name="panel_inspector_filter_style">Стиль</string>
+    <string name="panel_inspector_filter_effects">Эффекты</string>
+    <string name="panel_inspector_filter_timing">Тайминг</string>
+    <string name="panel_layers_duplicate">Дублировать слой</string>
+    <string name="panel_layers_split">Разделить по курсору</string>
+    <string name="panel_layers_move_up">Выше</string>
+    <string name="panel_layers_move_down">Ниже</string>
 </resources>

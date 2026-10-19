@@ -44,8 +44,24 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AccountTree
+import androidx.compose.material.icons.rounded.CenterFocusStrong
+import androidx.compose.material.icons.rounded.ContentCopy
+import androidx.compose.material.icons.rounded.ContentCut
+import androidx.compose.material.icons.rounded.DeleteOutline
+import androidx.compose.material.icons.rounded.GridOn
+import androidx.compose.material.icons.rounded.Key
+import androidx.compose.material.icons.rounded.Lock
+import androidx.compose.material.icons.rounded.LockOpen
+import androidx.compose.material.icons.rounded.NavigateBefore
+import androidx.compose.material.icons.rounded.NavigateNext
+import androidx.compose.material.icons.rounded.Repeat
+import androidx.compose.material.icons.rounded.RestartAlt
+import androidx.compose.material.icons.rounded.Visibility
+import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.AspectRatio
@@ -132,7 +148,10 @@ import com.kerneldroid.rumo.data.RumoBridge
 import com.kerneldroid.rumo.work.RumoWork
 import com.kerneldroid.rumo.ui.panels.NodeGraphOverlay
 import com.kerneldroid.rumo.ui.theme.DockTokens
+import com.kerneldroid.rumo.ui.theme.EditorType
+import com.kerneldroid.rumo.ui.theme.RumoKind
 import com.kerneldroid.rumo.ui.theme.RumoSpacing
+import com.kerneldroid.rumo.ui.theme.editor
 import com.kerneldroid.rumo.ui.theme.hapticConfirm
 import com.kerneldroid.rumo.ui.theme.hapticReject
 import com.kerneldroid.rumo.ui.theme.hapticToggle
@@ -191,6 +210,10 @@ fun EditorScreen(
     val playheadMs by state.playheadMs.collectAsState()
     val projectDurationMs by state.projectDurationMs.collectAsState()
     val isPlaying by state.isPlaying.collectAsState()
+    val loopPlayback by state.loopPlayback.collectAsState()
+    val canvasW by state.canvasWidth.collectAsState()
+    val canvasH by state.canvasHeight.collectAsState()
+    var showCompGrid by rememberSaveable { mutableStateOf(false) }
     val renderDiagnostics by state.renderDiagnostics.collectAsState()
     val engineDriven by state.engineActive.collectAsState()
     val engineReady by state.engineReady.collectAsState()
@@ -629,6 +652,8 @@ fun EditorScreen(
             topBar = {
                 EditorTopBar(
                     projectName = projectName,
+                    canvasWidth = canvasW,
+                    canvasHeight = canvasH,
                     hasEdits = hasEdits,
                     openFailed = openFailed,
                     fill = previewFill,
@@ -686,31 +711,16 @@ fun EditorScreen(
                     .padding(horizontal = RumoSpacing.m)
 
                 if (isPortrait) {
-                    // The dead band came from giving the preview a `weight(1f)`
-                    // slot 2.4× taller than a 16:9 frame (507dp slot, 208dp frame):
-                    // the surplus was pure black. The preview now takes its
-                    // intrinsic height, the timeline and transport stay compact and
-                    // the dock — a fixed pane that scrolls inside — takes every
-                    // remaining dp, so no space is left unowned.
                     BoxWithConstraints(modifier = editorModifier) {
-                        // How much the rail needs and how much can be given to the dock.
-                        //
-                        // The rail with a selection asks for 308dp (four surfaces
-                        // plus "Done"), while `panelFloorHeight` = 268dp was a
-                        // lower estimate that missed: the bottom surface
-                        // was clipped and could not be tapped. The real
-                        // minimum is computed from the slots.
                         val railSlots = DockPage.entries.size + if (selectedId != null) 1 else 0
                         val railNeeds = DockTokens.railContentHeight(railSlots)
                         val minDock = DockTokens.handleZone + DockTokens.railSlot
-                        // The preview floor: the frame must stay usable, otherwise
-                        // the panel's gain is paid for with a blind preview.
-                        val previewFloor = 140.dp
+                        val previewFloor = 136.dp
                         val roomForDock = (
-                            maxHeight - DockTokens.transportHeight - previewFloor -
+                            maxHeight - DockTokens.transportHeight - DockTokens.quickBarHeight - previewFloor -
                                 (if (previewFill) 0.dp else DockTokens.timelineEstimate)
                             ).coerceAtLeast(minDock)
-                        val maxDock = roomForDock.coerceAtMost(maxHeight * 0.8f)
+                        val maxDock = roomForDock.coerceAtMost(maxHeight * 0.78f)
                         val autoDock = railNeeds.coerceIn(minDock, maxDock)
                         val dockHeight = if (dockHeightDp.isNaN()) {
                             autoDock
@@ -718,22 +728,6 @@ fun EditorScreen(
                             dockHeightDp.dp.coerceIn(minDock, maxDock)
                         }
 
-                        // The preview is flexible, the dock is fixed.
-                        //
-                        // It used to be the other way round: the dock took `weight(1f)`, that is,
-                        // the remainder, while the preview in Fit mode was weightless and had no
-                        // maximum. A `Column` measures a weightless child by the
-                        // remainder, and the frame height is computed from that same `maxHeight`
-                        // (`frameWidth = min(maxWidth, maxHeight * aspect)`), so for a
-                        // tall canvas the frame took up **the whole** column height.
-                        // After that the remainder for the dock was exactly 0, and the panel
-                        // disappeared — that was the complaint "if Preview is large, the dock
-                        // goes all the way down".
-                        //
-                        // Now `weight(1f)` is on the preview: the weightless neighbours
-                        // (timeline, transport, dock) are measured first and get
-                        // their heights, and the preview takes whatever is left. No
-                        // mode can starve the dock any more.
                         Column(modifier = Modifier.fillMaxSize()) {
                             PreviewArea(
                                 state = state,
@@ -746,17 +740,41 @@ fun EditorScreen(
                                 useSurface = engineReady && !surfaceFailed,
                                 playheadMs = playheadMs,
                                 fill = previewFill,
+                                showGrid = showCompGrid,
                                 onPreviewSize = {
                                     previewSizePx = it
                                     state.previewCanvasW = it.width.toFloat()
                                     state.previewCanvasH = it.height.toFloat()
                                 },
-                                // Flexible in all modes: `heightIn(min)` is a floor,
-                                // so the frame does not collapse on a short screen.
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .weight(1f)
                                     .heightIn(min = 96.dp),
+                            )
+                            TransportBar(
+                                playheadMs = playheadMs,
+                                durationMs = projectDurationMs,
+                                isPlaying = isPlaying,
+                                loopPlayback = loopPlayback,
+                                showGrid = showCompGrid,
+                                onJumpStart = { state.jumpToStart() },
+                                onStepBack = { state.stepFrame(-1) },
+                                onTogglePlay = { state.togglePlay() },
+                                onStepForward = { state.stepFrame(1) },
+                                onJumpEnd = { state.jumpToEnd() },
+                                onToggleLoop = { state.toggleLoopPlayback() },
+                                onToggleGrid = { showCompGrid = !showCompGrid },
+                                onSeek = { state.seekTo(it) },
+                            )
+                            QuickActionBar(
+                                state = state,
+                                selectedLayer = selectedLayer,
+                                playheadMs = playheadMs,
+                                locked = selectedLayer?.id in lockedIds,
+                                onAddLayer = { showAddSheet = true },
+                                onOpenCanvas = { showCanvas = true },
+                                onOpenNodeGraph = { showNodeGraph = true },
+                                onDeleteLayer = { deleteLayerWithUndo(it) },
                             )
                             if (!previewFill) {
                                 TimelineStrip(
@@ -765,21 +783,15 @@ fun EditorScreen(
                                     selectedId = selectedId,
                                     playheadMs = playheadMs,
                                     durationMs = projectDurationMs,
-                                    onSelect = { state.selectLayer(it) },
+                                    onSelect = {
+                                        selectionFromLayerList = false
+                                        state.selectLayer(it)
+                                    },
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(vertical = RumoSpacing.xs),
+                                        .padding(vertical = RumoSpacing.xxs),
                                 )
                             }
-                            TransportBar(
-                                playheadMs = playheadMs,
-                                durationMs = projectDurationMs,
-                                isPlaying = isPlaying,
-                                onJumpStart = { state.jumpToStart() },
-                                onJumpEnd = { state.jumpToEnd() },
-                                onTogglePlay = { state.togglePlay() },
-                                onSeek = { state.seekTo(it) },
-                            )
                             EditorDock(
                                 state = state,
                                 layers = layers,
@@ -791,7 +803,6 @@ fun EditorScreen(
                                 page = dockPage,
                                 onPageChange = { state.setDockPage(it) },
                                 onSelect = {
-                                    // Selecting a row in the layer list, not an intention to edit.
                                     selectionFromLayerList = true
                                     state.selectLayer(it)
                                 },
@@ -802,24 +813,21 @@ fun EditorScreen(
                                 onDeleteLayer = { deleteLayerWithUndo(it) },
                                 onOpenNodeGraph = { showNodeGraph = true },
                                 onTogglePlayback = { state.togglePlay() },
-                            onDeselect = { state.selectLayer(null) },
+                                onDeselect = { state.selectLayer(null) },
                                 collapsed = dockCollapsed,
                                 onCollapsedChange = { state.setDockCollapsed(it) },
-                                // An explicit height, not the remainder: the dock has none of its
-                                // own (the root is `fillMaxHeight`), and "how much is left"
-                                // meant "how much the preview did not take".
                                 onResize = { delta ->
                                     dockHeightDp = (dockHeight.value + delta)
                                         .coerceIn(minDock.value, maxDock.value)
+                                },
+                                onSnapDetent = { fraction ->
+                                    val target = minDock + (maxDock - minDock) * fraction
+                                    dockHeightDp = target.value.coerceIn(minDock.value, maxDock.value)
                                 },
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(
                                         if (dockCollapsed) {
-                                            // A collapsed dock is a handle. `railSlot`,
-                                            // not `railHeight`: the handle stands above
-                                            // the rail, and the height must be its
-                                            // slot, otherwise the handle does not fit.
                                             minDock
                                         } else {
                                             dockHeight
@@ -829,82 +837,103 @@ fun EditorScreen(
                         }
                     }
                 } else {
-                    Row(
+                    BoxWithConstraints(
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(horizontal = RumoSpacing.m),
-                        horizontalArrangement = Arrangement.spacedBy(RumoSpacing.m),
                     ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            PreviewArea(
-                                state = state,
-                                shapes = shapes,
-                                textLayers = textLayers,
-                                mediaLayers = mediaLayers,
-                                selectedId = selectedId,
-                                selectedLayer = selectedLayer,
-                                thumbnail = frameThumbnail,
-                                useSurface = engineReady && !surfaceFailed,
-                                playheadMs = playheadMs,
-                                onPreviewSize = {
-                                    previewSizePx = it
-                                    state.previewCanvasW = it.width.toFloat()
-                                    state.previewCanvasH = it.height.toFloat()
-                                },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .weight(1f),
-                            )
-                            TimelineStrip(
+                        val sideDockWidth = (maxWidth * 0.44f).coerceIn(320.dp, 460.dp)
+                        Row(
+                            modifier = Modifier.fillMaxSize(),
+                            horizontalArrangement = Arrangement.spacedBy(RumoSpacing.m),
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                PreviewArea(
+                                    state = state,
+                                    shapes = shapes,
+                                    textLayers = textLayers,
+                                    mediaLayers = mediaLayers,
+                                    selectedId = selectedId,
+                                    selectedLayer = selectedLayer,
+                                    thumbnail = frameThumbnail,
+                                    useSurface = engineReady && !surfaceFailed,
+                                    playheadMs = playheadMs,
+                                    fill = previewFill,
+                                    showGrid = showCompGrid,
+                                    onPreviewSize = {
+                                        previewSizePx = it
+                                        state.previewCanvasW = it.width.toFloat()
+                                        state.previewCanvasH = it.height.toFloat()
+                                    },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .weight(1f),
+                                )
+                                TransportBar(
+                                    playheadMs = playheadMs,
+                                    durationMs = projectDurationMs,
+                                    isPlaying = isPlaying,
+                                    loopPlayback = loopPlayback,
+                                    showGrid = showCompGrid,
+                                    onJumpStart = { state.jumpToStart() },
+                                    onStepBack = { state.stepFrame(-1) },
+                                    onTogglePlay = { state.togglePlay() },
+                                    onStepForward = { state.stepFrame(1) },
+                                    onJumpEnd = { state.jumpToEnd() },
+                                    onToggleLoop = { state.toggleLoopPlayback() },
+                                    onToggleGrid = { showCompGrid = !showCompGrid },
+                                    onSeek = { state.seekTo(it) },
+                                )
+                                QuickActionBar(
+                                    state = state,
+                                    selectedLayer = selectedLayer,
+                                    playheadMs = playheadMs,
+                                    locked = selectedLayer?.id in lockedIds,
+                                    onAddLayer = { showAddSheet = true },
+                                    onOpenCanvas = { showCanvas = true },
+                                    onOpenNodeGraph = { showNodeGraph = true },
+                                    onDeleteLayer = { deleteLayerWithUndo(it) },
+                                )
+                                TimelineStrip(
+                                    state = state,
+                                    layers = layers,
+                                    selectedId = selectedId,
+                                    playheadMs = playheadMs,
+                                    durationMs = projectDurationMs,
+                                    onSelect = {
+                                        selectionFromLayerList = false
+                                        state.selectLayer(it)
+                                    },
+                                    modifier = Modifier.padding(vertical = RumoSpacing.xxs),
+                                )
+                            }
+                            EditorDock(
                                 state = state,
                                 layers = layers,
+                                selectedLayer = selectedLayer,
                                 selectedId = selectedId,
                                 playheadMs = playheadMs,
-                                durationMs = projectDurationMs,
-                                onSelect = { state.selectLayer(it) },
-                                modifier = Modifier.padding(vertical = RumoSpacing.xs),
-                            )
-                            TransportBar(
-                                playheadMs = playheadMs,
-                                durationMs = projectDurationMs,
                                 isPlaying = isPlaying,
-                                onJumpStart = { state.jumpToStart() },
-                                onJumpEnd = { state.jumpToEnd() },
-                                onTogglePlay = { state.togglePlay() },
-                                onSeek = { state.seekTo(it) },
+                                locked = selectedLayer?.id in lockedIds,
+                                page = dockPage,
+                                onPageChange = { state.setDockPage(it) },
+                                onSelect = {
+                                    selectionFromLayerList = true
+                                    state.selectLayer(it)
+                                },
+                                onImportImage = { pickers.launchImage() },
+                                onImportAudio = { pickers.launchAudio() },
+                                onImportVideo = { pickers.launchVideo() },
+                                onAddLayer = { showAddSheet = true },
+                                onDeleteLayer = { deleteLayerWithUndo(it) },
+                                onOpenNodeGraph = { showNodeGraph = true },
+                                onTogglePlayback = { state.togglePlay() },
+                                onDeselect = { state.selectLayer(null) },
+                                collapsed = dockCollapsed,
+                                onCollapsedChange = { state.setDockCollapsed(it) },
+                                modifier = Modifier.width(sideDockWidth),
                             )
                         }
-                        EditorDock(
-                            state = state,
-                            layers = layers,
-                            selectedLayer = selectedLayer,
-                            selectedId = selectedId,
-                            playheadMs = playheadMs,
-                            isPlaying = isPlaying,
-                            locked = selectedLayer?.id in lockedIds,
-                            page = dockPage,
-                            onPageChange = { state.setDockPage(it) },
-                            onSelect = {
-                                // Selecting a row in the layer list, not an intention to edit.
-                                selectionFromLayerList = true
-                                state.selectLayer(it)
-                            },
-                            onImportImage = { pickers.launchImage() },
-                            onImportAudio = { pickers.launchAudio() },
-                            onImportVideo = { pickers.launchVideo() },
-                            onAddLayer = { showAddSheet = true },
-                            onDeleteLayer = { deleteLayerWithUndo(it) },
-                            onOpenNodeGraph = { showNodeGraph = true },
-                            onTogglePlayback = { state.togglePlay() },
-                            onDeselect = { state.selectLayer(null) },
-                            collapsed = dockCollapsed,
-                            onCollapsedChange = { state.setDockCollapsed(it) },
-                            // Landscape is height-bound, so the preview column
-                            // already fills its slot and keeps its 16:9 frame
-                            // without a dead band; the dock stays a fixed-width
-                            // pane that fills the height and scrolls inside.
-                            modifier = Modifier.width(360.dp),
-                        )
                     }
                 }
             }
@@ -1006,6 +1035,8 @@ private fun shortReason(reason: String, max: Int = 160): String =
 @Composable
 private fun EditorTopBar(
     projectName: String,
+    canvasWidth: Int,
+    canvasHeight: Int,
     hasEdits: Boolean,
     openFailed: Boolean,
     fill: Boolean,
@@ -1039,27 +1070,44 @@ private fun EditorTopBar(
             .background(MaterialTheme.colorScheme.surface)
             .windowInsetsPadding(TopAppBarDefaults.windowInsets)
             .padding(
-                start = RumoSpacing.xs,
-                end = RumoSpacing.xs,
-                top = RumoSpacing.xs,
-                bottom = RumoSpacing.xs,
+                start = RumoSpacing.xxs,
+                end = RumoSpacing.xxs,
+                top = RumoSpacing.xxs,
+                bottom = RumoSpacing.xxs,
             ),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        IconButton(onClick = onBack) {
+        IconButton(onClick = onBack, modifier = Modifier.size(40.dp)) {
             Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(R.string.action_back))
         }
         Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = projectName,
-                style = MaterialTheme.typography.titleMedium,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            // The path/engine/edited line used to sit here in every frame. It
-            // was developer telemetry over a consumer surface: the render path
-            // and the diagnostics report now live behind the overflow menu, and
-            // the only state worth a line is a failed open.
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(RumoSpacing.xs),
+            ) {
+                Text(
+                    text = projectName,
+                    style = MaterialTheme.typography.titleSmall,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false),
+                )
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                        .clickable(onClick = onCanvas)
+                        .padding(horizontal = 6.dp, vertical = 2.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = "${canvasWidth}×$canvasHeight",
+                        style = EditorType.micro.merge(monoNumerals),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                    )
+                }
+            }
             if (openFailed) {
                 Text(
                     text = stringResource(R.string.editor_open_failed),
@@ -1070,14 +1118,50 @@ private fun EditorTopBar(
                 )
             }
         }
-        IconButton(onClick = onAdd) {
-            Icon(Icons.Rounded.Add, contentDescription = stringResource(R.string.editor_add_layer))
-        }
-        IconButton(onClick = onSave) {
+        // Direct Undo & Redo buttons in the top bar so history steps never require opening overflow.
+        IconButton(
+            onClick = onUndo,
+            enabled = canUndo,
+            modifier = Modifier.size(38.dp),
+        ) {
             Icon(
-                Icons.Rounded.Save,
+                imageVector = Icons.AutoMirrored.Rounded.Undo,
+                contentDescription = stringResource(R.string.editor_undo),
+                modifier = Modifier.size(20.dp),
+            )
+        }
+        IconButton(
+            onClick = onRedo,
+            enabled = canRedo,
+            modifier = Modifier.size(38.dp),
+        ) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Rounded.Redo,
+                contentDescription = stringResource(R.string.editor_redo),
+                modifier = Modifier.size(20.dp),
+            )
+        }
+        IconButton(onClick = onAdd, modifier = Modifier.size(38.dp)) {
+            Icon(
+                imageVector = Icons.Rounded.Add,
+                contentDescription = stringResource(R.string.editor_add_layer),
+                modifier = Modifier.size(20.dp),
+            )
+        }
+        IconButton(onClick = onSave, modifier = Modifier.size(38.dp)) {
+            Icon(
+                imageVector = Icons.Rounded.Save,
                 contentDescription = stringResource(R.string.editor_save_project),
                 tint = saveTint,
+                modifier = Modifier.size(20.dp),
+            )
+        }
+        IconButton(onClick = onExport, modifier = Modifier.size(38.dp)) {
+            Icon(
+                imageVector = Icons.Rounded.Share,
+                contentDescription = stringResource(R.string.editor_export_mp4),
+                tint = MaterialTheme.editor.accent,
+                modifier = Modifier.size(19.dp),
             )
         }
         Box {
@@ -1265,16 +1349,20 @@ private fun layerBoxPx(
     layer: LayerUi,
     frameW: Float,
     frameH: Float,
+    offsetX: Float,
+    offsetY: Float,
+    scaleVal: Float,
     rotationDeg: Float,
     textBounds: FloatArray?,
     mediaSize: IntArray? = null,
     svgSize: FloatArray? = null,
 ): LayerBoxPx? {
     if (frameW <= 0f || frameH <= 0f) return null
-    val centre = Offset(frameW / 2f + layer.offsetX, frameH / 2f + layer.offsetY)
+    val centre = Offset(frameW / 2f + offsetX, frameH / 2f + offsetY)
+    val clampedScale = scaleVal.coerceIn(LayerUi.MIN_SCALE, LayerUi.MAX_SCALE)
     return when (layer.kind) {
         LayerKindUi.MEDIA -> {
-            val side = frameH * 0.6f * layer.scale.coerceIn(LayerUi.MIN_SCALE, LayerUi.MAX_SCALE)
+            val side = frameH * 0.6f * clampedScale
             if (side <= 0f) return null
             // The same `fitInside` as in the frame build: the selection box must
             // follow the photo's bounds, otherwise the scale handles pull something other than
@@ -1283,15 +1371,11 @@ private fun layerBoxPx(
             LayerBoxPx(centre, fit[0] / 2f, fit[1] / 2f, 0f)
         }
         LayerKindUi.SHAPE -> {
-            val side = frameH * 0.6f * layer.scale.coerceIn(LayerUi.MIN_SCALE, LayerUi.MAX_SCALE)
+            val side = frameH * 0.6f * clampedScale
             if (side <= 0f) return null
             val w = svgSize?.get(0) ?: 0f
             val h = svgSize?.get(1) ?: 0f
             if (w > 0f && h > 0f) {
-                // Exactly the engine's rule (`svg_meshes`): the longer side is
-                // `side`, the shorter follows the proportion. We compute in Float, not
-                // through `fitInside`: that rounds the source to Int and would lose
-                // the proportion of a small document (for example, a viewBox 3×1).
                 val k = side / maxOf(w, h)
                 LayerBoxPx(centre, w * k / 2f, h * k / 2f, rotationDeg)
             } else {
@@ -1299,13 +1383,12 @@ private fun layerBoxPx(
             }
         }
         LayerKindUi.TEXT -> {
-            // The layout bounds are given in scene px of PREVIEW_H height.
-            val k = frameH / EditorState.PREVIEW_H.toFloat()
+            val k = (frameH / EditorState.PREVIEW_H.toFloat()) * clampedScale
             val b = textBounds
             if (b != null && b.size >= 2 && b[0] > 0f && b[1] > 0f) {
                 LayerBoxPx(centre, b[0] * k / 2f, b[1] * k / 2f, rotationDeg)
             } else {
-                val side = frameH * 0.6f
+                val side = frameH * 0.6f * clampedScale
                 LayerBoxPx(centre, side / 2f, side / 2f, rotationDeg)
             }
         }
@@ -1370,6 +1453,7 @@ private fun PreviewArea(
     useSurface: Boolean,
     playheadMs: Long,
     fill: Boolean = false,
+    showGrid: Boolean = false,
     onPreviewSize: (IntSize) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -1377,35 +1461,26 @@ private fun PreviewArea(
     val primary = MaterialTheme.colorScheme.primary
     var previewSize by remember { mutableStateOf(IntSize.Zero) }
 
-    // Live values for the restart-proof gesture handlers. `shapes`,
-    // `textLayers`, `mediaLayers` and `selectedLayer` are fresh instances on
-    // every recomposition, so keying `pointerInput` on them restarted the
-    // detector mid-gesture: the first move event recomposed, the key changed
-    // and Compose cancelled the in-flight drag — the "jumps once, then stops"
-    // bug. The detectors below are keyed on `Unit` and read the current values
-    // through these snapshots instead. `previewSize` is itself a
-    // `mutableStateOf` read inside the lambdas, so it stays current.
     val liveShapes by rememberUpdatedState(shapes)
     val liveTextLayers by rememberUpdatedState(textLayers)
     val liveMediaLayers by rememberUpdatedState(mediaLayers)
     val liveSelectedLayer by rememberUpdatedState(selectedLayer)
     val livePlayhead by rememberUpdatedState(playheadMs)
 
-    // Handles are measured in px: the hit area does not depend on the frame size, so
-    // 24 dp are the same on a small preview too.
     val handleHitPx = with(LocalDensity.current) { HandleHitSize.toPx() }
     val rotateStemPx = with(LocalDensity.current) { RotateStemLength.toPx() }
 
-    /** The layer's box in frame px (see [layerBoxPx]). */
-    fun boxOf(layer: LayerUi, w: Float, h: Float): LayerBoxPx? = layerBoxPx(
+    /** The layer's box in frame px using animated coordinates at [livePlayhead]. */
+    fun boxOf(layer: LayerUi, w: Float, h: Float, tMs: Long = livePlayhead): LayerBoxPx? = layerBoxPx(
         layer = layer,
         frameW = w,
         frameH = h,
-        rotationDeg = chromeRotationFor(layer, state.rotationAt(layer, livePlayhead)),
+        offsetX = state.xAt(layer, tMs),
+        offsetY = state.yAt(layer, tMs),
+        scaleVal = state.scaleAt(layer, tMs),
+        rotationDeg = chromeRotationFor(layer, state.rotationAt(layer, tMs)),
         textBounds = state.textBoundsFor(layer.id),
         mediaSize = layer.uri?.let { state.textureSizeFor(it) },
-        // A proportion exists only for an SVG layer: a Material shape has no size of its
-        // own, and an `svgSizeFor` request by its uri would be nonsense.
         svgSize = if (state.isSvgLayer(layer)) layer.uri?.let { state.svgSizeFor(it) } else null,
     )
 
@@ -1548,7 +1623,7 @@ private fun PreviewArea(
                                 null
                             }
                             val locked = sel == null || sel.id in state.locked.value
-                            val startScale = sel?.scale ?: 1f
+                            val startScale = sel?.let { state.scaleAt(it, livePlayhead) } ?: 1f
                             val startRotation = sel?.let { state.rotationAt(it, livePlayhead) } ?: 0f
                             var began = false
                             var zoomAcc = 1f
@@ -1570,11 +1645,18 @@ private fun PreviewArea(
                                 val pan = event.calculatePan()
                                 if (zoom.isFinite() && zoom > 0f) zoomAcc *= zoom
                                 if (rot.isFinite()) rotAcc += rot
-                                state.setScale(sel.id, startScale * zoomAcc)
+                                state.setPropertyOrKeyframe(
+                                    sel.id,
+                                    EditorState.KeyTrack.SCALE,
+                                    startScale * zoomAcc,
+                                    livePlayhead,
+                                )
                                 if (rotAcc != 0f) {
-                                    state.addKeyframe(
+                                    state.setPropertyOrKeyframe(
                                         sel.id,
+                                        EditorState.KeyTrack.ROTATION,
                                         normalizeRotation(startRotation + rotAcc),
+                                        livePlayhead,
                                     )
                                 }
                                 if (pan.getDistance() > 0f) {
@@ -1634,7 +1716,7 @@ private fun PreviewArea(
                                             mode = if (handle == 8) DragMode.ROTATE else DragMode.SCALE,
                                             box = selBox,
                                             startPointer = pos,
-                                            startScale = sel.scale,
+                                            startScale = state.scaleAt(sel, livePlayhead),
                                             startRotation = state.rotationAt(sel, livePlayhead),
                                         )
                                         haptic.hapticToggle(true)
@@ -1657,7 +1739,7 @@ private fun PreviewArea(
                                                     mode = DragMode.MOVE,
                                                     box = box,
                                                     startPointer = pos,
-                                                    startScale = layer.scale,
+                                                    startScale = state.scaleAt(layer, livePlayhead),
                                                     startRotation =
                                                         state.rotationAt(layer, livePlayhead),
                                                 )
@@ -1668,9 +1750,6 @@ private fun PreviewArea(
                             },
                             onDragEnd = {
                                 drag = null
-                                // The drag fed moveLayer/setScale/setAlpha, which
-                                // coalesce onto one entry; this closes it so the
-                                // next drag pushes its own.
                                 state.endGesture()
                                 haptic.hapticConfirm()
                             },
@@ -1686,30 +1765,30 @@ private fun PreviewArea(
                                         state.moveLayer(d.layerId, dragAmount.x, dragAmount.y)
 
                                     DragMode.SCALE -> {
-                                        // Uniform: the ratio of the distances from
-                                        // the layer's centre; the aspect does not change.
                                         val r0 = (d.startPointer - d.box.centre).getDistance()
                                         val r1 = (change.position - d.box.centre).getDistance()
                                         if (r0 > 1f) {
-                                            state.setScale(
+                                            state.setPropertyOrKeyframe(
                                                 d.layerId,
+                                                EditorState.KeyTrack.SCALE,
                                                 d.startScale * (r1 / r0),
+                                                livePlayhead,
                                             )
                                         }
                                     }
 
                                     DragMode.ROTATE -> {
-                                        // The pivot is the layer's centre; we write the same
-                                        // keyframe as the inspector slider.
                                         val v0 = d.startPointer - d.box.centre
                                         val v1 = change.position - d.box.centre
                                         if (v0.getDistance() > 1f && v1.getDistance() > 1f) {
                                             val delta = Math.toDegrees(
                                                 (atan2(v1.y, v1.x) - atan2(v0.y, v0.x)).toDouble(),
                                             ).toFloat()
-                                            state.addKeyframe(
+                                            state.setPropertyOrKeyframe(
                                                 d.layerId,
+                                                EditorState.KeyTrack.ROTATION,
                                                 normalizeRotation(d.startRotation + delta),
+                                                livePlayhead,
                                             )
                                         }
                                     }
@@ -1721,14 +1800,50 @@ private fun PreviewArea(
                 // The single source of the chrome: it lies over both render
                 // paths (SurfaceView and CPU-Canvas) and duplicates nothing.
                 Canvas(modifier = Modifier.fillMaxSize()) {
-                    val sel = selectedLayer ?: return@Canvas
                     val w = size.width
                     val h = size.height
+                    if (showGrid && w > 0f && h > 0f) {
+                        val gridColor = RumoKind.grid
+                        for (i in 1..2) {
+                            val gx = w * (i / 3f)
+                            val gy = h * (i / 3f)
+                            drawLine(gridColor, Offset(gx, 0f), Offset(gx, h), strokeWidth = 1f)
+                            drawLine(gridColor, Offset(0f, gy), Offset(w, gy), strokeWidth = 1f)
+                        }
+                    }
+                    val sel = selectedLayer ?: return@Canvas
+                    if (EditorState.isBackground(sel)) return@Canvas
+                    val curX = state.xAt(sel, playheadMs)
+                    val curY = state.yAt(sel, playheadMs)
+                    val curScale = state.scaleAt(sel, playheadMs)
+                    val curRot = chromeRotationFor(sel, state.rotationAt(sel, playheadMs))
+
+                    // Draw center alignment snap guides when the selected layer is near canvas center.
+                    if (abs(curX) < 3.5f) {
+                        drawLine(
+                            color = RumoKind.snap.copy(alpha = 0.75f),
+                            start = Offset(w / 2f, 0f),
+                            end = Offset(w / 2f, h),
+                            strokeWidth = 1.2.dp.toPx(),
+                        )
+                    }
+                    if (abs(curY) < 3.5f) {
+                        drawLine(
+                            color = RumoKind.snap.copy(alpha = 0.75f),
+                            start = Offset(0f, h / 2f),
+                            end = Offset(w, h / 2f),
+                            strokeWidth = 1.2.dp.toPx(),
+                        )
+                    }
+
                     val box = layerBoxPx(
                         layer = sel,
                         frameW = w,
                         frameH = h,
-                        rotationDeg = chromeRotationFor(sel, state.rotationAt(sel, playheadMs)),
+                        offsetX = curX,
+                        offsetY = curY,
+                        scaleVal = curScale,
+                        rotationDeg = curRot,
                         textBounds = state.textBoundsFor(sel.id),
                         mediaSize = sel.uri?.let { state.textureSizeFor(it) },
                         svgSize = if (state.isSvgLayer(sel)) {
@@ -1739,8 +1854,8 @@ private fun PreviewArea(
                     ) ?: return@Canvas
                     drawTransformChrome(
                         box = box,
-                        scale = sel.scale,
-                        rotationDeg = chromeRotationFor(sel, state.rotationAt(sel, playheadMs)),
+                        scale = curScale,
+                        rotationDeg = curRot,
                         supportsScale = layerSupportsScale(sel),
                         supportsRotation = sel.kind != LayerKindUi.MEDIA,
                         chromeColor = primary,
@@ -1823,15 +1938,24 @@ private fun EmptyPreviewHint() {
     }
 }
 
-/** Transport: one row of verbs, the timeline scrubber and the master timecode. */
+/**
+ * Frame-accurate NLE transport bar with play/pause, -1f / +1f frame stepping,
+ * jump start/end, loop toggle, composition grid toggle, and master timecode.
+ */
 @Composable
 private fun TransportBar(
     playheadMs: Long,
     durationMs: Long,
     isPlaying: Boolean,
+    loopPlayback: Boolean,
+    showGrid: Boolean,
     onJumpStart: () -> Unit,
-    onJumpEnd: () -> Unit,
+    onStepBack: () -> Unit,
     onTogglePlay: () -> Unit,
+    onStepForward: () -> Unit,
+    onJumpEnd: () -> Unit,
+    onToggleLoop: () -> Unit,
+    onToggleGrid: () -> Unit,
     onSeek: (Long) -> Unit,
 ) {
     val haptic = LocalHapticFeedback.current
@@ -1839,83 +1963,368 @@ private fun TransportBar(
         targetValue = if (isPlaying) 8.dp else 16.dp,
         animationSpec = spring(stiffness = Spring.StiffnessMedium),
     )
-    val fraction = if (durationMs > 0L) {
-        (playheadMs.toFloat() / durationMs.toFloat()).coerceIn(0f, 1f)
-    } else {
-        0f
-    }
-    Column(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(DockTokens.transportHeight)
-            .padding(bottom = RumoSpacing.xs),
+            .height(DockTokens.transportHeight),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(2.dp),
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(44.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(RumoSpacing.xs),
+        IconButton(
+            onClick = {
+                haptic.hapticConfirm()
+                onJumpStart()
+            },
+            modifier = Modifier.size(36.dp),
         ) {
-            IconButton(
-                onClick = {
-                    haptic.hapticConfirm()
-                    onJumpStart()
-                },
-                modifier = Modifier.size(44.dp),
-            ) {
-                Icon(
-                    Icons.Rounded.SkipPrevious,
-                    contentDescription = stringResource(R.string.editor_transport_start),
-                    modifier = Modifier.size(22.dp),
-                )
-            }
-            FilledTonalIconButton(
-                onClick = {
-                    haptic.hapticToggle(!isPlaying)
-                    onTogglePlay()
-                },
-                shape = RoundedCornerShape(playCorner),
-                modifier = Modifier.size(44.dp),
-            ) {
-                Icon(
-                    imageVector = if (isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
-                    contentDescription = stringResource(
-                        if (isPlaying) R.string.editor_transport_pause else R.string.editor_transport_play,
-                    ),
-                    modifier = Modifier.size(22.dp),
-                )
-            }
-            IconButton(
-                onClick = {
-                    haptic.hapticConfirm()
-                    onJumpEnd()
-                },
-                modifier = Modifier.size(44.dp),
-            ) {
-                Icon(
-                    Icons.Rounded.SkipNext,
-                    contentDescription = stringResource(R.string.editor_transport_end),
-                    modifier = Modifier.size(22.dp),
-                )
-            }
-            // The ruler scrub strip and this slider are the same seek.
-            Slider(
-                value = fraction,
-                onValueChange = { onSeek((it * durationMs).toLong()) },
-                onValueChangeFinished = { haptic.hapticConfirm() },
-                modifier = Modifier.weight(1f),
-            )
-            Text(
-                text = formatTime(playheadMs),
-                style = MaterialTheme.typography.labelMedium.merge(monoNumerals),
-            )
-            Text(
-                text = " / ${formatTime(durationMs)}",
-                style = MaterialTheme.typography.labelSmall.merge(monoNumerals),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            Icon(
+                Icons.Rounded.SkipPrevious,
+                contentDescription = stringResource(R.string.editor_transport_start),
+                modifier = Modifier.size(19.dp),
             )
         }
+        IconButton(
+            onClick = {
+                haptic.hapticToggle(false)
+                onStepBack()
+            },
+            modifier = Modifier.size(36.dp),
+        ) {
+            Icon(
+                Icons.Rounded.NavigateBefore,
+                contentDescription = stringResource(R.string.editor_step_back),
+                modifier = Modifier.size(20.dp),
+            )
+        }
+        FilledTonalIconButton(
+            onClick = {
+                haptic.hapticToggle(!isPlaying)
+                onTogglePlay()
+            },
+            shape = RoundedCornerShape(playCorner),
+            modifier = Modifier.size(40.dp),
+        ) {
+            Icon(
+                imageVector = if (isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
+                contentDescription = stringResource(
+                    if (isPlaying) R.string.editor_transport_pause else R.string.editor_transport_play,
+                ),
+                modifier = Modifier.size(21.dp),
+            )
+        }
+        IconButton(
+            onClick = {
+                haptic.hapticToggle(true)
+                onStepForward()
+            },
+            modifier = Modifier.size(36.dp),
+        ) {
+            Icon(
+                Icons.Rounded.NavigateNext,
+                contentDescription = stringResource(R.string.editor_step_forward),
+                modifier = Modifier.size(20.dp),
+            )
+        }
+        IconButton(
+            onClick = {
+                haptic.hapticConfirm()
+                onJumpEnd()
+            },
+            modifier = Modifier.size(36.dp),
+        ) {
+            Icon(
+                Icons.Rounded.SkipNext,
+                contentDescription = stringResource(R.string.editor_transport_end),
+                modifier = Modifier.size(19.dp),
+            )
+        }
+        IconButton(
+            onClick = {
+                haptic.hapticToggle(!loopPlayback)
+                onToggleLoop()
+            },
+            modifier = Modifier.size(34.dp),
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.Repeat,
+                contentDescription = stringResource(R.string.editor_loop_playback),
+                tint = if (loopPlayback) {
+                    MaterialTheme.editor.signal
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
+                modifier = Modifier.size(17.dp),
+            )
+        }
+        IconButton(
+            onClick = {
+                haptic.hapticToggle(!showGrid)
+                onToggleGrid()
+            },
+            modifier = Modifier.size(34.dp),
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.GridOn,
+                contentDescription = stringResource(R.string.editor_toggle_grid),
+                tint = if (showGrid) {
+                    MaterialTheme.editor.accent
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
+                modifier = Modifier.size(17.dp),
+            )
+        }
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .padding(end = RumoSpacing.xxs),
+            contentAlignment = Alignment.CenterEnd,
+        ) {
+            Row(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(MaterialTheme.colorScheme.surfaceContainerLow)
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = formatTime(playheadMs),
+                    style = EditorType.micro.merge(monoNumerals),
+                    color = MaterialTheme.editor.signal,
+                )
+                Text(
+                    text = " / ${formatTime(durationMs)}",
+                    style = EditorType.micro.merge(monoNumerals),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+}
+
+/**
+ * CapCut / Alight Motion style contextual quick-action strip.
+ * When a user layer is selected, exposes 1-tap editing operations (Split at Playhead,
+ * Duplicate, Keyframe toggle, Prev/Next Keyframe, Center on Canvas, Reset Transform,
+ * Node Graph, Lock, Visibility, Delete). When no layer or the Background is selected,
+ * offers quick layer creation and canvas tools.
+ */
+@Composable
+private fun QuickActionBar(
+    state: EditorState,
+    selectedLayer: LayerUi?,
+    playheadMs: Long,
+    locked: Boolean,
+    onAddLayer: () -> Unit,
+    onOpenCanvas: () -> Unit,
+    onOpenNodeGraph: () -> Unit,
+    onDeleteLayer: (String) -> Unit,
+) {
+    val haptic = LocalHapticFeedback.current
+    val scrollState = rememberScrollState()
+    val isBg = selectedLayer != null && EditorState.isBackground(selectedLayer)
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(DockTokens.quickBarHeight)
+            .horizontalScroll(scrollState)
+            .padding(vertical = 3.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        if (selectedLayer != null && !isBg) {
+            val canSplit = !locked &&
+                playheadMs >= selectedLayer.startMs + EditorState.MIN_LAYER_DURATION_MS &&
+                playheadMs <= selectedLayer.startMs + selectedLayer.durationMs - EditorState.MIN_LAYER_DURATION_MS
+
+            QuickActionChip(
+                icon = Icons.Rounded.ContentCut,
+                label = stringResource(R.string.editor_quick_split),
+                enabled = canSplit,
+                onClick = {
+                    if (state.splitLayer(selectedLayer.id, playheadMs) != null) {
+                        haptic.hapticConfirm()
+                    } else {
+                        haptic.hapticReject()
+                    }
+                },
+            )
+            QuickActionChip(
+                icon = Icons.Rounded.ContentCopy,
+                label = stringResource(R.string.editor_quick_duplicate),
+                onClick = {
+                    if (state.duplicateLayer(selectedLayer.id) != null) {
+                        haptic.hapticConfirm()
+                    }
+                },
+            )
+            if (selectedLayer.kind != LayerKindUi.AUDIO) {
+                QuickActionChip(
+                    icon = Icons.Rounded.Key,
+                    label = stringResource(R.string.editor_quick_keyframe),
+                    enabled = !locked,
+                    accent = true,
+                    onClick = {
+                        state.togglePropertyKeyframe(
+                            selectedLayer.id,
+                            EditorState.KeyTrack.ROTATION,
+                            playheadMs,
+                        )
+                        state.setDockPage(DockPage.ADJUST)
+                        haptic.hapticConfirm()
+                    },
+                )
+                QuickActionChip(
+                    icon = Icons.Rounded.NavigateBefore,
+                    label = stringResource(R.string.editor_quick_prev_key),
+                    onClick = {
+                        state.jumpToPrevKeyframe(selectedLayer.id)
+                        haptic.hapticToggle(false)
+                    },
+                )
+                QuickActionChip(
+                    icon = Icons.Rounded.NavigateNext,
+                    label = stringResource(R.string.editor_quick_next_key),
+                    onClick = {
+                        state.jumpToNextKeyframe(selectedLayer.id)
+                        haptic.hapticToggle(true)
+                    },
+                )
+                QuickActionChip(
+                    icon = Icons.Rounded.CenterFocusStrong,
+                    label = stringResource(R.string.editor_quick_center),
+                    enabled = !locked,
+                    onClick = {
+                        state.centerLayer(selectedLayer.id)
+                        haptic.hapticConfirm()
+                    },
+                )
+                QuickActionChip(
+                    icon = Icons.Rounded.RestartAlt,
+                    label = stringResource(R.string.editor_quick_reset),
+                    enabled = !locked,
+                    onClick = {
+                        state.resetLayerTransform(selectedLayer.id)
+                        haptic.hapticConfirm()
+                    },
+                )
+            }
+            QuickActionChip(
+                icon = Icons.Rounded.AccountTree,
+                label = stringResource(R.string.editor_node_graph),
+                onClick = {
+                    haptic.hapticToggle(true)
+                    onOpenNodeGraph()
+                },
+            )
+            QuickActionChip(
+                icon = if (locked) Icons.Rounded.Lock else Icons.Rounded.LockOpen,
+                label = stringResource(if (locked) R.string.panel_unlock else R.string.panel_lock),
+                onClick = {
+                    state.toggleLocked(selectedLayer.id)
+                    haptic.hapticToggle(!locked)
+                },
+            )
+            QuickActionChip(
+                icon = if (selectedLayer.visible) Icons.Rounded.Visibility else Icons.Rounded.VisibilityOff,
+                label = stringResource(if (selectedLayer.visible) R.string.panel_hide else R.string.panel_show),
+                onClick = {
+                    state.toggleVisibility(selectedLayer.id)
+                    haptic.hapticToggle(!selectedLayer.visible)
+                },
+            )
+            QuickActionChip(
+                icon = Icons.Rounded.DeleteOutline,
+                label = stringResource(R.string.panel_delete),
+                destructive = true,
+                onClick = {
+                    haptic.hapticConfirm()
+                    onDeleteLayer(selectedLayer.id)
+                },
+            )
+        } else {
+            QuickActionChip(
+                icon = Icons.Rounded.Add,
+                label = stringResource(R.string.editor_add_layer),
+                accent = true,
+                onClick = {
+                    haptic.hapticToggle(true)
+                    onAddLayer()
+                },
+            )
+            QuickActionChip(
+                icon = Icons.Rounded.AspectRatio,
+                label = stringResource(R.string.editor_canvas_title),
+                onClick = {
+                    haptic.hapticToggle(true)
+                    onOpenCanvas()
+                },
+            )
+            QuickActionChip(
+                icon = Icons.Rounded.AccountTree,
+                label = stringResource(R.string.editor_node_graph),
+                onClick = {
+                    haptic.hapticToggle(true)
+                    onOpenNodeGraph()
+                },
+            )
+        }
+    }
+}
+
+@Composable
+private fun QuickActionChip(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    enabled: Boolean = true,
+    accent: Boolean = false,
+    destructive: Boolean = false,
+    onClick: () -> Unit,
+) {
+    val bg = when {
+        !enabled -> MaterialTheme.colorScheme.surfaceContainerLow.copy(alpha = 0.5f)
+        destructive -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.45f)
+        accent -> MaterialTheme.editor.accent.copy(alpha = 0.18f)
+        else -> MaterialTheme.colorScheme.surfaceContainerHigh
+    }
+    val contentTint = when {
+        !enabled -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+        destructive -> MaterialTheme.colorScheme.error
+        accent -> MaterialTheme.editor.accent
+        else -> MaterialTheme.colorScheme.onSurface
+    }
+    Row(
+        modifier = Modifier
+            .height(32.dp)
+            .clip(RoundedCornerShape(8.dp))
+            .background(bg)
+            .border(
+                width = 0.75.dp,
+                color = if (accent && enabled) {
+                    MaterialTheme.editor.accent.copy(alpha = 0.55f)
+                } else {
+                    MaterialTheme.colorScheme.outlineVariant
+                },
+                shape = RoundedCornerShape(8.dp),
+            )
+            .clickable(enabled = enabled, onClick = onClick)
+            .padding(horizontal = 9.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(5.dp),
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = contentTint,
+            modifier = Modifier.size(15.dp),
+        )
+        Text(
+            text = label,
+            style = EditorType.micro,
+            color = contentTint,
+            maxLines = 1,
+        )
     }
 }
 
@@ -1975,6 +2384,17 @@ private fun normalizeRotation(deg: Float): Float {
   * render paths; `handlePx` is the square's size, the hit area is set separately
   * ([HandleHitSize]) and does not depend on the frame's size.
  */
+private val ChromeBadgeTextPaint = android.graphics.Paint().apply {
+    isAntiAlias = true
+    textAlign = android.graphics.Paint.Align.LEFT
+    color = android.graphics.Color.WHITE
+}
+
+private val ChromeBadgeBgPaint = android.graphics.Paint().apply {
+    isAntiAlias = true
+    color = android.graphics.Color.argb(190, 0, 0, 0)
+}
+
 private fun DrawScope.drawTransformChrome(
     box: LayerBoxPx,
     scale: Float,
@@ -2064,12 +2484,7 @@ private fun DrawScope.drawTransformChrome(
     }
     if (label.isEmpty()) return
     val textSize = 11.dp.toPx()
-    val paint = android.graphics.Paint().apply {
-        isAntiAlias = true
-        textAlign = android.graphics.Paint.Align.LEFT
-        color = android.graphics.Color.WHITE
-        this.textSize = textSize
-    }
+    val paint = ChromeBadgeTextPaint.apply { this.textSize = textSize }
     val padX = 6.dp.toPx()
     val padY = 3.dp.toPx()
     val textW = paint.measureText(label)
@@ -2085,10 +2500,7 @@ private fun DrawScope.drawTransformChrome(
             boxTop + badgeH,
             4.dp.toPx(),
             4.dp.toPx(),
-            android.graphics.Paint().apply {
-                isAntiAlias = true
-                color = android.graphics.Color.argb(190, 0, 0, 0)
-            },
+            ChromeBadgeBgPaint,
         )
         drawText(label, boxLeft + padX, boxTop + padY + textSize * 0.82f, paint)
     }

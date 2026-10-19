@@ -465,4 +465,52 @@
     <string name="panel_nodes_reset">重設</string>
     <string name="panel_nodes_close">關閉節點圖</string>
 
+
+    <!-- ===================== Wave 1 NLE & UI Redesign ===================== -->
+    <string name="editor_step_back">上一影格</string>
+    <string name="editor_step_forward">下一影格</string>
+    <string name="editor_loop_playback">循環播放</string>
+    <string name="editor_toggle_grid">構圖網格</string>
+    <string name="editor_quick_split">分割</string>
+    <string name="editor_quick_duplicate">複製</string>
+    <string name="editor_quick_keyframe">關鍵影格</string>
+    <string name="editor_quick_prev_key">上一關鍵影格</string>
+    <string name="editor_quick_next_key">下一關鍵影格</string>
+    <string name="editor_quick_center">置中</string>
+    <string name="editor_quick_reset">重設</string>
+    <string name="editor_timeline_zoom_in">放大時間軸</string>
+    <string name="editor_timeline_zoom_out">縮小時間軸</string>
+    <string name="editor_timeline_expand_tracks">展開軌道</string>
+    <string name="editor_dock_compact">緊湊</string>
+    <string name="editor_dock_half">半螢幕</string>
+    <string name="editor_dock_full">展開</string>
+    <string name="panel_inspector_scale">縮放</string>
+    <string name="panel_inspector_start_time">起始時間</string>
+    <string name="panel_inspector_center_x">水平置中</string>
+    <string name="panel_inspector_center_y">垂直置中</string>
+    <string name="panel_inspector_reset_transform">重設變換</string>
+    <string name="panel_inspector_section_keyframes">關鍵影格與曲線</string>
+    <string name="panel_inspector_section_transition">轉場</string>
+    <string name="panel_inspector_track_rotation">旋轉</string>
+    <string name="panel_inspector_track_scale">縮放</string>
+    <string name="panel_inspector_track_pos_x">位置 X</string>
+    <string name="panel_inspector_track_pos_y">位置 Y</string>
+    <string name="panel_inspector_track_opacity">不透明度</string>
+    <string name="panel_inspector_clear_keys">清空軌道</string>
+    <string name="panel_inspector_curve_linear">線性</string>
+    <string name="panel_inspector_curve_hold">定格</string>
+    <string name="panel_inspector_curve_smooth">平滑</string>
+    <string name="panel_inspector_curve_ease_in">緩入</string>
+    <string name="panel_inspector_curve_ease_out">緩出</string>
+    <string name="panel_inspector_curve_ease_in_out">緩入緩出</string>
+    <string name="panel_inspector_curve_hint">拖曳 P1 / P2 控制點調整 %1$s 關鍵影格的出點曲線</string>
+    <string name="panel_inspector_filter_all">全部</string>
+    <string name="panel_inspector_filter_transform">變換</string>
+    <string name="panel_inspector_filter_style">樣式</string>
+    <string name="panel_inspector_filter_effects">效果</string>
+    <string name="panel_inspector_filter_timing">時長</string>
+    <string name="panel_layers_duplicate">複製圖層</string>
+    <string name="panel_layers_split">在播放頭處分割</string>
+    <string name="panel_layers_move_up">上移</string>
+    <string name="panel_layers_move_down">下移</string>
 </resources>
