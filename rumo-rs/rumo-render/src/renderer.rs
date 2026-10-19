@@ -1302,18 +1302,21 @@ impl GpuRenderer {
             });
         let mut first_pass = true;
         for (mesh, color, transform) in layers {
+            if mesh.indices.is_empty() || mesh.vertices.is_empty() {
+                continue;
+            }
             let uniforms = Uniforms {
                 transform: *transform,
                 color: *color,
             };
             let uniform_buffer = uniform_buffer(&self.device, &uniforms);
-            let vertex_data: Vec<f32> =
-                mesh.vertices.iter().flat_map(|v| [v[0], v[1]]).collect();
+            // `[f32; 2]` is `Pod` with an 8-byte stride matching the vertex layout,
+            // so casting the slice directly avoids a per-layer Vec<f32> allocation.
             let vertex_buffer =
                 self.device
                     .create_buffer_init(&wgpu::util::BufferInitDescriptor {
                         label: Some("surface vertices"),
-                        contents: bytemuck::cast_slice(&vertex_data),
+                        contents: bytemuck::cast_slice(&mesh.vertices),
                         usage: wgpu::BufferUsages::VERTEX,
                     });
             let index_buffer =
@@ -1441,15 +1444,17 @@ impl GpuRenderer {
 
         let mut first_pass = true;
         for (mesh, color, transform) in meshes {
+            if mesh.indices.is_empty() || mesh.vertices.is_empty() {
+                continue;
+            }
             let uniforms = Uniforms {
                 transform: *transform,
                 color: *color,
             };
             let uniform_buffer = uniform_buffer(device, &uniforms);
-            let vertex_data: Vec<f32> = mesh.vertices.iter().flat_map(|v| [v[0], v[1]]).collect();
             let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: Some("vertices"),
-                contents: bytemuck::cast_slice(&vertex_data),
+                contents: bytemuck::cast_slice(&mesh.vertices),
                 usage: wgpu::BufferUsages::VERTEX,
             });
             let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -1672,13 +1677,11 @@ impl GpuRenderer {
                     color: *color,
                 };
                 let uniform_buffer = uniform_buffer(&self.device, &uniforms);
-                let vertex_data: Vec<f32> =
-                    mesh.vertices.iter().flat_map(|v| [v[0], v[1]]).collect();
                 let vertex_buffer =
                     self.device
                         .create_buffer_init(&wgpu::util::BufferInitDescriptor {
                             label: Some("fxs vertices"),
-                            contents: bytemuck::cast_slice(&vertex_data),
+                            contents: bytemuck::cast_slice(&mesh.vertices),
                             usage: wgpu::BufferUsages::VERTEX,
                         });
                 let index_buffer =

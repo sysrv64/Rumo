@@ -27,12 +27,12 @@
 //! single 0xAARRGGBB conversion for `Bitmap.Config.ARGB_8888` happens once at
 //! the JNI exit in [`crate::jni`], never here.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use std::sync::{Arc, Mutex, OnceLock};
 use std::time::Duration;
 
 use crate::renderer::{GpuRenderer, MeshData, RenderConfig, TexturedQuad, blend_over, render_frame_cpu};
-use crate::svg::{SvgDoc, parse_svg, svg_meshes};
+use crate::svg::{SvgDoc, SvgMesh, parse_svg, svg_meshes};
 use crate::texture::{Mat4, TextureImage, TexturedMesh};
 use crate::{ShapeKind, ShapeParams, all_shapes, shape_path};
 
@@ -78,6 +78,10 @@ pub const SVG_ID_BASE: i32 = 10_000;
 /// frame builder: the frame builder has no JNI dependency, and putting the
 /// store next to its only reader keeps the lookup a plain function call
 /// instead of a second lock reached across the module boundary.
+/// Base box size (in px) at which preview and export SVG layers are tessellated
+/// before per-layer scale and placement are applied.
+const PREVIEW_SVG_BASE_PX: f32 = 256.0;
+
 struct SvgStore {
     /// Next id to hand out. Starts at [`SVG_ID_BASE`] so a minted id can never
     /// be read as a Material ordinal; anything below the base is either that
@@ -88,6 +92,13 @@ struct SvgStore {
     /// gradients, skipped-element names), so a per-frame clone would be the
     /// expensive part.
     docs: HashMap<i32, Arc<SvgDoc>>,
+    /// Pre-tessellated sub-meshes at [`PREVIEW_SVG_BASE_PX`].
+    ///
+    /// `preview_shape_draws` always fits SVG layers into the same 256px base box
+    /// and scales the resulting vertices into the frame. Tessellating once at
+    /// registration avoids running `kurbo::flatten` and `lyon` on every SVG path
+    /// on every VSYNC frame.
+    meshes: HashMap<i32, Arc<Vec<SvgMesh>>>,
 }
 
 impl SvgStore {
@@ -95,6 +106,7 @@ impl SvgStore {
         Self {
             next_id: SVG_ID_BASE,
             docs: HashMap::new(),
+            meshes: HashMap::new(),
         }
     }
 }
@@ -117,6 +129,7 @@ fn svgs() -> &'static Mutex<SvgStore> {
 /// still billions of registrations.
 pub fn register_svg(bytes: &[u8]) -> Option<i32> {
     let doc = parse_svg(bytes).ok()?;
+    let prebuilt = Arc::new(svg_meshes(&doc, PREVIEW_SVG_BASE_PX));
     let mut store = svgs()
         .lock()
         .unwrap_or_else(|poisoned| poisoned.into_inner());
@@ -130,6 +143,7 @@ pub fn register_svg(bytes: &[u8]) -> Option<i32> {
     }
     store.next_id = if id == i32::MAX { -1 } else { id + 1 };
     store.docs.insert(id, Arc::new(doc));
+    store.meshes.insert(id, prebuilt);
     Some(id)
 }
 
@@ -141,12 +155,21 @@ pub fn svg_doc(id: i32) -> Option<Arc<SvgDoc>> {
     store.docs.get(&id).cloned()
 }
 
+/// The pre-tessellated sub-meshes for `id` at [`PREVIEW_SVG_BASE_PX`].
+pub fn svg_meshes_cached(id: i32) -> Option<Arc<Vec<SvgMesh>>> {
+    let store = svgs()
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
+    store.meshes.get(&id).cloned()
+}
+
 /// Forget the document `id`; `true` when one was present. The id stays burned —
 /// see [`register_svg`].
 pub fn free_svg(id: i32) -> bool {
     let mut store = svgs()
         .lock()
         .unwrap_or_else(|poisoned| poisoned.into_inner());
+    store.meshes.remove(&id);
     store.docs.remove(&id).is_some()
 }
 
@@ -412,6 +435,84 @@ pub fn shape_mesh_vertices(
     Some((verts, buffers.indices))
 }
 
+/// Maximum number of tessellated shape meshes kept in [`ShapeMeshCache`].
+///
+/// There are 36 shapes in `all_shapes()`; 256 slots cover multiple active
+/// shapes across static and keyframe-held angles without unbounded growth.
+const SHAPE_MESH_CACHE_CAP: usize = 256;
+
+type ShapeMeshKey = (usize, u32, u32, u32);
+type SharedShapeMesh = Arc<(Vec<[f32; 2]>, Vec<u32>)>;
+
+struct ShapeMeshCache {
+    order: VecDeque<ShapeMeshKey>,
+    entries: HashMap<ShapeMeshKey, SharedShapeMesh>,
+}
+
+impl ShapeMeshCache {
+    fn new() -> Self {
+        Self {
+            order: VecDeque::with_capacity(SHAPE_MESH_CACHE_CAP),
+            entries: HashMap::with_capacity(SHAPE_MESH_CACHE_CAP),
+        }
+    }
+
+    fn get(&self, key: &ShapeMeshKey) -> Option<SharedShapeMesh> {
+        self.entries.get(key).cloned()
+    }
+
+    fn insert(&mut self, key: ShapeMeshKey, value: SharedShapeMesh) {
+        if self.entries.contains_key(&key) {
+            return;
+        }
+        while self.order.len() >= SHAPE_MESH_CACHE_CAP {
+            if let Some(oldest) = self.order.pop_front() {
+                self.entries.remove(&oldest);
+            }
+        }
+        self.order.push_back(key);
+        self.entries.insert(key, value);
+    }
+}
+
+fn shape_mesh_cache() -> &'static Mutex<ShapeMeshCache> {
+    static CELL: OnceLock<Mutex<ShapeMeshCache>> = OnceLock::new();
+    CELL.get_or_init(|| Mutex::new(ShapeMeshCache::new()))
+}
+
+/// Cached counterpart of [`shape_mesh_vertices`].
+///
+/// Keyed by the exact bit patterns of `size_px`, `rounding` and `rotation_deg`
+/// so the returned vertices and indices are bit-for-bit identical to a fresh
+/// [`shape_mesh_vertices`] call while avoiding repeated `kurbo::flatten` and
+/// `lyon` tessellation on static or held frames.
+pub fn shape_mesh_cached(
+    ordinal: usize,
+    size_px: f32,
+    rounding: f32,
+    rotation_deg: f32,
+) -> Option<SharedShapeMesh> {
+    if !size_px.is_finite() || !rounding.is_finite() || !rotation_deg.is_finite() {
+        return None;
+    }
+    // Canonicalize -0.0 to +0.0 so both hit the same slot.
+    let norm = |v: f32| if v == 0.0 { 0.0f32.to_bits() } else { v.to_bits() };
+    let key = (ordinal, norm(size_px), norm(rounding), norm(rotation_deg));
+    if let Some(hit) = shape_mesh_cache()
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner())
+        .get(&key)
+    {
+        return Some(hit);
+    }
+    let built = Arc::new(shape_mesh_vertices(ordinal, size_px, rounding, rotation_deg)?);
+    shape_mesh_cache()
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner())
+        .insert(key, Arc::clone(&built));
+    Some(built)
+}
+
 /// Tessellate + place SHAPE `specs` for a `width`×`height` frame, exactly like
 /// the legacy preview path: each layer at 256px, scaled to 60% of frame
 /// height, rotated, moved to frame centre + (`dx`,`dy`). Each layer's own
@@ -519,7 +620,7 @@ pub fn preview_shape_draws(
             // Unknown ids are skipped, exactly like unknown texture ids: a
             // layer that lost its source costs one missing draw, never a panic
             // and never a blank frame.
-            let Some(doc) = svg_doc(svg_id) else {
+            let Some(meshes) = svg_meshes_cached(svg_id) else {
                 continue;
             };
             // The ordinal path bakes the rotation into `shape_path` before
@@ -531,7 +632,7 @@ pub fn preview_shape_draws(
             // `svg_meshes` fits the artwork into the `base` box with the same
             // top-left origin `shape_mesh_vertices` uses, so the placement is
             // the ordinal path's with the rotation folded in.
-            for sub in svg_meshes(&doc, base) {
+            for sub in meshes.iter() {
                 if sub.indices.is_empty() || sub.positions.is_empty() {
                     continue;
                 }
@@ -552,7 +653,7 @@ pub fn preview_shape_draws(
                 out.push((
                     MeshData {
                         vertices: placed,
-                        indices: sub.indices,
+                        indices: sub.indices.clone(),
                     },
                     argb_to_f32(sub.argb, s.alpha),
                     mat,
@@ -562,11 +663,12 @@ pub fn preview_shape_draws(
             continue;
         }
 
-        let Some((verts, indices)) =
-            shape_mesh_vertices(s.ordinal, base, 0.0, s.rotation_deg)
+        let Some(cached_mesh) =
+            shape_mesh_cached(s.ordinal, base, 0.0, s.rotation_deg)
         else {
             continue;
         };
+        let (verts, indices) = cached_mesh.as_ref();
         let placed: Vec<[f32; 2]> = verts
             .iter()
             .map(|[x, y]| {
@@ -579,7 +681,7 @@ pub fn preview_shape_draws(
         out.push((
             MeshData {
                 vertices: placed,
-                indices,
+                indices: indices.clone(),
             },
             argb_to_f32(s.argb, s.alpha),
             mat,
