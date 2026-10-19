@@ -30,7 +30,7 @@ object RumoKind {
 }
 
 /**
- * Android phone metrics.
+ * Android phone and tablet layout metrics.
  * Source: Drift `src/qml/Theme.qml` Android block (topBar 56, bottomRail 64,
  * minTouchTarget 48, trackLabels 88, playheadHandle 16, clipTrimHandle 20,
  * keyframe diamond 12) and Concat `ui/phone/controls.slint` ("forty-four pixels
@@ -61,8 +61,17 @@ object DockTokens {
     val handleZone = 14.dp
 
     val rulerHeight = 26.dp
-    val trackRow = 26.dp
+    val trackRow = 30.dp
     val keyDiamond = 12.dp
+
+    /** Left track-header column width in the multi-track timeline. */
+    val trackHeaderWidth = 104.dp
+
+    /** Interactive drag handle width on the left and right edges of a timeline clip. */
+    val trimHandleWidth = 14.dp
+
+    /** CapCut / Alight Motion style quick-action toolbar height above the timeline. */
+    val quickBarHeight = 44.dp
 
     /** Whole transport block: one row of 32dp verbs + the seek slider. */
     // A 44dp button + 4dp bottom padding. It was 40dp with 32dp buttons:
@@ -75,12 +84,6 @@ object DockTokens {
     val transportHeight = 48.dp
 
     /**
-     * Floor for the panel area in the preview's "Fill" mode. The dock itself is
-     * sized by the layout (it is the remainder of the column), not by a fraction
-     * of the screen: sizing it from screenH is what left a dead band between the
-     * preview and the timeline on a tall phone.
-     */
-    /**
      * How much the rail needs for `slots` slots: the surfaces plus "Done"
      * when there is something to deselect, plus the vertical padding.
      *
@@ -91,7 +94,7 @@ object DockTokens {
     fun railContentHeight(slots: Int) = railSlot * slots + RumoSpacing.xs * 2
 
     /**
-     * Estimate of the timeline's height: the ruler plus two tracks plus the padding.
+     * Estimate of the timeline's height: the ruler plus visible tracks plus the padding.
      *
      * Needed only for the *default* dock height. `TimelineStrip` itself knows the
      * exact height, but it depends on the number of tracks and changes as work
@@ -99,7 +102,7 @@ object DockTokens {
      * An error of a couple of dp here costs one step of rail scrolling, not a lost
      * surface.
      */
-    val timelineEstimate = 86.dp
+    val timelineEstimate = 136.dp
 
     /** Panel floor: how much to keep when the space is tight and the rail scrolls. */
     val panelFloorHeight = 268.dp

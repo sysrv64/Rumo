@@ -20,6 +20,7 @@ import kotlin.math.roundToInt
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -432,8 +433,17 @@ class EditorState {
             // Audio is the master clock: the playhead = nativeAudioPosition.
             val next = audioMasterMs() ?: (_playheadMs.value + dtMs)
             if (next >= end) {
-                _playheadMs.value = end
-                pausePlayback()
+                if (_loopPlayback.value && end > 0L) {
+                    _playheadMs.value = 0L
+                    for (h in audioHandles.values) {
+                        RumoBridge.audioSeek(h, 0.0)
+                        RumoBridge.audioPlay(h)
+                    }
+                    choreographer?.postFrameCallback(this)
+                } else {
+                    _playheadMs.value = end
+                    pausePlayback()
+                }
             } else {
                 _playheadMs.value = next.coerceAtLeast(0L)
                 choreographer?.postFrameCallback(this)
@@ -445,6 +455,24 @@ class EditorState {
     @Volatile
     var engineHandle: Long = 0L
         private set
+
+    /**
+     * Physical dimensions of the active SurfaceView. Tracked so background
+     * preview ticks pushed from [renderPreviewFrame] render at the live
+     * surface resolution rather than falling back to [_canvasW]×[_canvasH].
+     */
+    @Volatile
+    private var surfaceW: Int = 0
+
+    @Volatile
+    private var surfaceH: Int = 0
+
+    /**
+     * Conflated render queue: during rapid scrubbing or gizmo drags, intermediate
+     * frame requests collapse into the most recent state so IO coroutines never
+     * pile up or call into JNI out of order.
+     */
+    private val renderRequests = Channel<Unit>(Channel.CONFLATED)
 
     private val _engineActive = MutableStateFlow(false)
     val engineActive: StateFlow<Boolean> = _engineActive.asStateFlow()
@@ -654,6 +682,13 @@ class EditorState {
 
     private val _isPlaying = MutableStateFlow(false)
     val isPlaying: StateFlow<Boolean> = _isPlaying.asStateFlow()
+
+    private val _loopPlayback = MutableStateFlow(false)
+    val loopPlayback: StateFlow<Boolean> = _loopPlayback.asStateFlow()
+
+    fun toggleLoopPlayback() {
+        _loopPlayback.value = !_loopPlayback.value
+    }
 
     private val _engineVersion = MutableStateFlow("…")
     val engineVersion: StateFlow<String> = _engineVersion.asStateFlow()
@@ -1176,6 +1211,17 @@ class EditorState {
      * The group index = the draw call index; trailing empty groups are trimmed,
      * a missing/empty index means "no effects". "" — if no layer has any effects.
      */
+    private data class EffectsJsonCache(
+        val shapeGroups: List<List<Effect>>,
+        val textureGroups: List<List<Effect>>,
+        val projectCustoms: List<CustomEffectUi>,
+        val installedCustoms: List<CustomEffectUi>,
+        val json: String,
+    )
+
+    @Volatile
+    private var effectsJsonCache: EffectsJsonCache? = null
+
     private fun effectsJsonFor(
         shapeGroups: List<List<Effect>>,
         textureGroups: List<List<Effect>>,
@@ -1184,6 +1230,18 @@ class EditorState {
         val anyShapes = shapeGroups.any { g -> g.any { it.kindId.isNotEmpty() } }
         val anyTextures = textureGroups.any { g -> g.any { it.kindId.isNotEmpty() } }
         if (!anyShapes && !anyTextures) return ""
+        val projectCustoms = _customEffects.value
+        val installedCustoms = _installedEffects.value
+        val cached = effectsJsonCache
+        if (
+            cached != null &&
+            cached.shapeGroups == shapeGroups &&
+            cached.textureGroups == textureGroups &&
+            cached.projectCustoms == projectCustoms &&
+            cached.installedCustoms == installedCustoms
+        ) {
+            return cached.json
+        }
         val shapes = effectGroupsArray(shapeGroups)
         val textures = effectGroupsArray(textureGroups)
         val out = JSONObject()
@@ -1201,7 +1259,15 @@ class EditorState {
         // the frame".
         val custom = CustomEffects.encode(mergedCustoms())
         if (custom.length() > 0) out.put("custom", custom)
-        return out.toString()
+        val json = out.toString()
+        effectsJsonCache = EffectsJsonCache(
+            shapeGroups = shapeGroups,
+            textureGroups = textureGroups,
+            projectCustoms = projectCustoms,
+            installedCustoms = installedCustoms,
+            json = json,
+        )
+        return json
     }
 
     /** Effect groups in draw-call order; trailing empty ones are trimmed. */
@@ -1226,10 +1292,14 @@ class EditorState {
         if (keys.isEmpty()) return 0f
         if (tMs <= keys.first().timeMs) return keys.first().value
         if (tMs >= keys.last().timeMs) return keys.last().value
-        val i = keys.indexOfFirst { tMs <= it.timeMs }
+        val hit = keys.binarySearchBy(tMs) { it.timeMs }
+        if (hit >= 0) return keys[hit].value
+        val i = (-hit - 1).coerceIn(1, keys.lastIndex)
         val a = keys[i - 1]
         val b = keys[i]
-        val f = ((tMs - a.timeMs).toFloat() / (b.timeMs - a.timeMs).toFloat()).coerceIn(0f, 1f)
+        val span = (b.timeMs - a.timeMs).toFloat()
+        if (span <= 0f) return a.value
+        val f = ((tMs - a.timeMs).toFloat() / span).coerceIn(0f, 1f)
         // The curve belongs to the *outgoing* key: `a` decides how it leaves.
         // A linear curve does that with exactly the expression that was there
         // before curves — so all the old documents stay identical.
@@ -1249,10 +1319,14 @@ class EditorState {
         if (keys.isEmpty()) return base
         if (tMs <= keys.first().timeMs) return keys.first().value
         if (tMs >= keys.last().timeMs) return keys.last().value
-        val i = keys.indexOfFirst { tMs <= it.timeMs }
+        val hit = keys.binarySearchBy(tMs) { it.timeMs }
+        if (hit >= 0) return keys[hit].value
+        val i = (-hit - 1).coerceIn(1, keys.lastIndex)
         val a = keys[i - 1]
         val b = keys[i]
-        val f = ((tMs - a.timeMs).toFloat() / (b.timeMs - a.timeMs).toFloat()).coerceIn(0f, 1f)
+        val span = (b.timeMs - a.timeMs).toFloat()
+        if (span <= 0f) return a.value
+        val f = ((tMs - a.timeMs).toFloat() / span).coerceIn(0f, 1f)
         // The curve belongs to the *outgoing* key: `a` decides how it leaves.
         // A linear curve does that with exactly the expression that was there
         // before curves — so all the old documents stay identical.
@@ -1343,6 +1417,11 @@ class EditorState {
                 )
                 reconcileVideoResources(list)
                 syncSvgRegistry(list)
+            }
+        }
+        scope.launch(Dispatchers.IO) {
+            for (req in renderRequests) {
+                renderPreviewFrameNow()
             }
         }
         scope.launch {
@@ -1804,29 +1883,31 @@ class EditorState {
         copy(dxs = dxs.mapScaled(s, ox), dys = dys.mapScaled(s, oy))
 
     fun renderPreviewFrame() {
-        scope.launch(Dispatchers.IO) {
-            // The frame is drawn by the engine, and only by it: there is no longer
-            // an offscreen render with a read-back and a Bitmap here (docs/12
-            // §12.4). If there is no engine, or the Surface refused it, there will
-            // be no frame at all — the window shows an explicit "GPU path
-            // unavailable" rather than an approximation drawn by another path. Two
-            // renderers means two pictures, and the second one was never the one
-            // the user sees.
-            //
-            // The path of the last frame. The diagnostics (when present) are the
-            // source of truth: the legacy renderPath() reflects the bitmap
-            // function and lies on the Surface engine. We re-read the diagnostics
-            // only on a path change — otherwise it would be JNI + JSON parsing on
-            // every frame.
-            val effective = _renderDiagnostics.value?.path.orEmpty()
-                .ifEmpty { RumoBridge.renderPath() }
-            if (effective != _renderPath.value) {
-                _renderPath.value = effective
-                refreshRenderDiagnostics()
-            }
-            // The engine path is active: we push the same frame into the Surface engine.
-            if (_engineActive.value) pushEngineFrame()
+        renderRequests.trySend(Unit)
+    }
+
+    private fun renderPreviewFrameNow() {
+        // The frame is drawn by the engine, and only by it: there is no longer
+        // an offscreen render with a read-back and a Bitmap here (docs/12
+        // §12.4). If there is no engine, or the Surface refused it, there will
+        // be no frame at all — the window shows an explicit "GPU path
+        // unavailable" rather than an approximation drawn by another path. Two
+        // renderers means two pictures, and the second one was never the one
+        // the user sees.
+        //
+        // The path of the last frame. The diagnostics (when present) are the
+        // source of truth: the legacy renderPath() reflects the bitmap
+        // function and lies on the Surface engine. We re-read the diagnostics
+        // only on a path change — otherwise it would be JNI + JSON parsing on
+        // every frame.
+        val effective = _renderDiagnostics.value?.path.orEmpty()
+            .ifEmpty { RumoBridge.renderPath() }
+        if (effective != _renderPath.value) {
+            _renderPath.value = effective
+            refreshRenderDiagnostics()
         }
+        // The engine path is active: we push the same frame into the Surface engine.
+        if (_engineActive.value) pushEngineFrame()
     }
 
 
@@ -1931,6 +2012,16 @@ class EditorState {
         }
     }
 
+    /**
+     * Step the playhead forward or backward by [deltaFrames] at [fps] (default 30fps).
+     * Pauses active playback first so frame-accurate keyframing is deterministic.
+     */
+    fun stepFrame(deltaFrames: Int, fps: Int = 30) {
+        if (_isPlaying.value) pausePlayback()
+        val frameMs = (1000L / fps.coerceAtLeast(1)).coerceAtLeast(1L)
+        seekTo(_playheadMs.value + deltaFrames * frameMs)
+    }
+
     // --- Engine handle + Surface callbacks (SurfacePreview) ---
     /** Create on entering the editor. Without the Rust symbols it returns null → fallback. */
     fun acquireEngine() {
@@ -1956,6 +2047,8 @@ class EditorState {
     fun releaseEngine() {
         pausePlayback()
         releaseVideoResources()
+        surfaceW = 0
+        surfaceH = 0
         _engineActive.value = false
         _engineReady.value = false
         _surfaceFailed.value = false
@@ -1967,6 +2060,8 @@ class EditorState {
     fun engineSurfaceCreated(surface: Surface, w: Int, h: Int) {
         val e = engineHandle
         if (e == 0L) return
+        surfaceW = w
+        surfaceH = h
         val rc = RumoBridge.engineSurfaceCreated(e, surface, w, h)
         if (rc != null && rc == 0) {
             _engineActive.value = true
@@ -1989,6 +2084,8 @@ class EditorState {
     fun engineSurfaceChanged(w: Int, h: Int) {
         val e = engineHandle
         if (e == 0L) return
+        surfaceW = w
+        surfaceH = h
         if (RumoBridge.engineSurfaceChanged(e, w, h)) {
             pushEngineFrame(w, h)
         } else {
@@ -2001,6 +2098,8 @@ class EditorState {
 
     fun engineSurfaceDestroyed() {
         val e = engineHandle
+        surfaceW = 0
+        surfaceH = 0
         if (e == 0L) return
         RumoBridge.engineSurfaceDestroyed(e)
         _engineActive.value = false
@@ -2008,7 +2107,10 @@ class EditorState {
 
     /** The same Ex frame as on the bitmap path — into the engine + renderFrame.
      * The coordinates are scaled to the Surface's physical size. */
-    private fun pushEngineFrame(w: Int = _canvasW.value, h: Int = _canvasH.value) {
+    private fun pushEngineFrame(
+        w: Int = surfaceW.takeIf { it > 0 } ?: _canvasW.value,
+        h: Int = surfaceH.takeIf { it > 0 } ?: _canvasH.value,
+    ) {
         val e = engineHandle
         if (e == 0L || w <= 0 || h <= 0) return
         val f = previewFrameExAt(_playheadMs.value, w, h)
@@ -2876,6 +2978,200 @@ class EditorState {
         KeyTrack.ALPHA -> copy(alphaKeys = next)
     }
 
+    /** Sampled value of [track] on [layer] at [tMs]. */
+    fun valueAt(layer: LayerUi, track: KeyTrack, tMs: Long = _playheadMs.value): Float = when (track) {
+        KeyTrack.ROTATION -> rotationAt(layer, tMs)
+        KeyTrack.SCALE -> scaleAt(layer, tMs)
+        KeyTrack.POSITION_X -> xAt(layer, tMs)
+        KeyTrack.POSITION_Y -> yAt(layer, tMs)
+        KeyTrack.ALPHA -> alphaBaseAt(layer, tMs)
+    }
+
+    /**
+     * Whether [track] on [layer] is currently animated by keyframes.
+     * Rotation always holds at least one keyframe (`0L -> baseDeg`), so it counts as
+     * animated when there are 2+ keys or the single key is placed away from 0ms.
+     */
+    fun isTrackAnimated(layer: LayerUi, track: KeyTrack): Boolean = when (track) {
+        KeyTrack.ROTATION -> layer.keys.size > 1 || (layer.keys.size == 1 && layer.keys.first().timeMs > 0L)
+        else -> keysOf(layer, track).isNotEmpty()
+    }
+
+    /**
+     * All keyframe timestamps across all animated tracks of [layer], sorted and unique.
+     * Used by the multi-track timeline diamond renderer and prev/next keyframe transport.
+     */
+    fun allKeyframeTimes(layer: LayerUi): List<Long> {
+        val out = HashSet<Long>()
+        if (layer.keys.size > 1 || (layer.keys.size == 1 && (layer.keys[0].timeMs != 0L || layer.keys[0].value != 0f))) {
+            for (k in layer.keys) out.add(k.timeMs)
+        }
+        for (k in layer.xKeys) out.add(k.timeMs)
+        for (k in layer.yKeys) out.add(k.timeMs)
+        for (k in layer.scaleKeys) out.add(k.timeMs)
+        for (k in layer.alphaKeys) out.add(k.timeMs)
+        return out.sorted()
+    }
+
+    /**
+     * Outgoing keyframe on [track] that governs the interpolation segment at [tMs],
+     * or null if the track has no keyframes.
+     */
+    fun activeKeyframeForCurve(
+        layer: LayerUi,
+        track: KeyTrack,
+        tMs: Long = _playheadMs.value,
+    ): KeyframeUi? {
+        val list = keysOf(layer, track)
+        if (list.isEmpty()) return null
+        return list.lastOrNull { it.timeMs <= tMs } ?: list.first()
+    }
+
+    /**
+     * Update a property from an interactive slider or gizmo:
+     * - If the track already has keyframes, updates or inserts the keyframe at [tMs]
+     *   (preserving its outgoing curve if a keyframe already exists at [tMs]).
+     * - If the track is not animated, updates the layer's base property with gesture
+     *   undo coalescing so dragging a slider produces a single undo step.
+     */
+    fun setPropertyOrKeyframe(
+        id: String,
+        track: KeyTrack,
+        value: Float,
+        tMs: Long = _playheadMs.value,
+    ) {
+        if (id in _locked.value) return
+        val layer = _layers.value.firstOrNull { it.id == id } ?: return
+        val clampedT = tMs.coerceAtLeast(0L)
+        when (track) {
+            KeyTrack.ROTATION -> {
+                pushUndo("rot:$id")
+                val clean = value.coerceIn(-360f, 360f)
+                _layers.update { layers ->
+                    layers.map { l ->
+                        if (l.id != id) l else {
+                            if (l.keys.size <= 1 && (l.keys.isEmpty() || l.keys[0].timeMs == 0L)) {
+                                val prevEase = l.keys.firstOrNull()?.ease ?: EaseUi()
+                                l.copy(keys = listOf(KeyframeUi(0L, clean, prevEase)))
+                            } else {
+                                val prevEase = l.keys.firstOrNull { it.timeMs == clampedT }?.ease ?: EaseUi()
+                                val next = (l.keys.filterNot { it.timeMs == clampedT } + KeyframeUi(clampedT, clean, prevEase))
+                                    .sortedBy { it.timeMs }
+                                l.copy(keys = next)
+                            }
+                        }
+                    }
+                }
+                _hasEdits.value = true
+            }
+            KeyTrack.SCALE -> {
+                val clean = value.takeIf { it.isFinite() }?.coerceIn(LayerUi.MIN_SCALE, LayerUi.MAX_SCALE) ?: return
+                if (layer.scaleKeys.isNotEmpty()) {
+                    pushUndo("scaleKey:$id")
+                    val prevEase = layer.scaleKeys.firstOrNull { it.timeMs == clampedT }?.ease ?: EaseUi()
+                    val next = (layer.scaleKeys.filterNot { it.timeMs == clampedT } + KeyframeUi(clampedT, clean, prevEase))
+                        .sortedBy { it.timeMs }
+                    _layers.update { list -> list.map { if (it.id == id) it.copy(scaleKeys = next) else it } }
+                    _hasEdits.value = true
+                } else {
+                    setScale(id, clean)
+                }
+            }
+            KeyTrack.POSITION_X -> {
+                val clean = value.coerceIn(-1000f, 1000f)
+                if (layer.xKeys.isNotEmpty()) {
+                    pushUndo("xKey:$id")
+                    val prevEase = layer.xKeys.firstOrNull { it.timeMs == clampedT }?.ease ?: EaseUi()
+                    val next = (layer.xKeys.filterNot { it.timeMs == clampedT } + KeyframeUi(clampedT, clean, prevEase))
+                        .sortedBy { it.timeMs }
+                    _layers.update { list -> list.map { if (it.id == id) it.copy(xKeys = next) else it } }
+                    _hasEdits.value = true
+                } else {
+                    setOffset(id, clean, yAt(layer, clampedT))
+                }
+            }
+            KeyTrack.POSITION_Y -> {
+                val clean = value.coerceIn(-1000f, 1000f)
+                if (layer.yKeys.isNotEmpty()) {
+                    pushUndo("yKey:$id")
+                    val prevEase = layer.yKeys.firstOrNull { it.timeMs == clampedT }?.ease ?: EaseUi()
+                    val next = (layer.yKeys.filterNot { it.timeMs == clampedT } + KeyframeUi(clampedT, clean, prevEase))
+                        .sortedBy { it.timeMs }
+                    _layers.update { list -> list.map { if (it.id == id) it.copy(yKeys = next) else it } }
+                    _hasEdits.value = true
+                } else {
+                    setOffset(id, xAt(layer, clampedT), clean)
+                }
+            }
+            KeyTrack.ALPHA -> {
+                val clean = value.coerceIn(0f, 1f)
+                if (layer.alphaKeys.isNotEmpty()) {
+                    pushUndo("alphaKey:$id")
+                    val prevEase = layer.alphaKeys.firstOrNull { it.timeMs == clampedT }?.ease ?: EaseUi()
+                    val next = (layer.alphaKeys.filterNot { it.timeMs == clampedT } + KeyframeUi(clampedT, clean, prevEase))
+                        .sortedBy { it.timeMs }
+                    _layers.update { list -> list.map { if (it.id == id) it.copy(alphaKeys = next) else it } }
+                    _hasEdits.value = true
+                } else {
+                    setAlpha(id, clean)
+                }
+            }
+        }
+    }
+
+    /**
+     * Toggle a keyframe on [track] at [tMs] (within a ±15ms frame tolerance).
+     * If a keyframe is already at [tMs], removes it; otherwise inserts one with
+     * the current sampled value at [tMs].
+     */
+    fun togglePropertyKeyframe(
+        id: String,
+        track: KeyTrack,
+        tMs: Long = _playheadMs.value,
+    ) {
+        if (id in _locked.value) return
+        val layer = _layers.value.firstOrNull { it.id == id } ?: return
+        val clampedT = tMs.coerceAtLeast(0L)
+        val keys = keysOf(layer, track)
+        val existing = keys.firstOrNull { kotlin.math.abs(it.timeMs - clampedT) <= 15L }
+        if (existing != null) {
+            if (track == KeyTrack.ROTATION && keys.size <= 1) {
+                addKeyframeAt(id, clampedT, valueAt(layer, track, clampedT))
+            } else {
+                removePropertyKeyframe(id, existing.timeMs, track)
+            }
+        } else {
+            val sampled = valueAt(layer, track, clampedT)
+            if (track == KeyTrack.ROTATION) {
+                addKeyframeAt(id, clampedT, sampled)
+            } else {
+                addPropertyKeyframe(id, clampedT, track, sampled)
+            }
+        }
+    }
+
+    /** Jump the playhead to the previous keyframe or clip boundary of layer [id]. */
+    fun jumpToPrevKeyframe(id: String) {
+        val layer = _layers.value.firstOrNull { it.id == id } ?: return
+        val cur = _playheadMs.value
+        val points = (allKeyframeTimes(layer) + listOf(layer.startMs, layer.startMs + layer.durationMs))
+            .distinct()
+            .sorted()
+        val prev = points.lastOrNull { it < cur - 5L } ?: 0L
+        seekTo(prev)
+    }
+
+    /** Jump the playhead to the next keyframe or clip boundary of layer [id]. */
+    fun jumpToNextKeyframe(id: String) {
+        val layer = _layers.value.firstOrNull { it.id == id } ?: return
+        val cur = _playheadMs.value
+        val points = (allKeyframeTimes(layer) + listOf(layer.startMs, layer.startMs + layer.durationMs))
+            .distinct()
+            .sorted()
+        val next = points.firstOrNull { it > cur + 5L } ?: _projectDurationMs.value
+        seekTo(next)
+    }
+
     fun setColor(id: String, argb: Long) {
         pushUndo("color:$id")
         _layers.update { layers ->
@@ -3272,19 +3568,247 @@ class EditorState {
     fun moveLayer(id: String, dx: Float, dy: Float) {
         pushUndo("move:$id")
         if (id in _locked.value) return
+        val t = _playheadMs.value.coerceAtLeast(0L)
         _layers.update { layers ->
             layers.map { layer ->
                 if (layer.id != id) {
                     layer
                 } else {
+                    val nextX = (xAt(layer, t) + dx).coerceIn(-1000f, 1000f)
+                    val nextY = (yAt(layer, t) + dy).coerceIn(-1000f, 1000f)
+                    val updatedXKeys = if (layer.xKeys.isNotEmpty()) {
+                        val ease = layer.xKeys.firstOrNull { it.timeMs == t }?.ease ?: EaseUi()
+                        (layer.xKeys.filterNot { it.timeMs == t } + KeyframeUi(t, nextX, ease))
+                            .sortedBy { it.timeMs }
+                    } else {
+                        layer.xKeys
+                    }
+                    val updatedYKeys = if (layer.yKeys.isNotEmpty()) {
+                        val ease = layer.yKeys.firstOrNull { it.timeMs == t }?.ease ?: EaseUi()
+                        (layer.yKeys.filterNot { it.timeMs == t } + KeyframeUi(t, nextY, ease))
+                            .sortedBy { it.timeMs }
+                    } else {
+                        layer.yKeys
+                    }
                     layer.copy(
-                        offsetX = (layer.offsetX + dx).coerceIn(-1000f, 1000f),
-                        offsetY = (layer.offsetY + dy).coerceIn(-1000f, 1000f),
+                        offsetX = if (layer.xKeys.isEmpty()) nextX else layer.offsetX,
+                        offsetY = if (layer.yKeys.isEmpty()) nextY else layer.offsetY,
+                        xKeys = updatedXKeys,
+                        yKeys = updatedYKeys,
                     )
                 }
             }
         }
         _hasEdits.value = true
+    }
+
+    /**
+     * Center layer [id] on the canvas along the requested axes at the current playhead.
+     */
+    fun centerLayer(id: String, horizontal: Boolean = true, vertical: Boolean = true) {
+        if (id in _locked.value) return
+        val layer = _layers.value.firstOrNull { it.id == id } ?: return
+        if (isBackground(layer)) return
+        val t = _playheadMs.value
+        val targetX = if (horizontal) 0f else xAt(layer, t)
+        val targetY = if (vertical) 0f else yAt(layer, t)
+        beginUndoBatch()
+        try {
+            if (horizontal) setPropertyOrKeyframe(id, KeyTrack.POSITION_X, targetX, t)
+            if (vertical) setPropertyOrKeyframe(id, KeyTrack.POSITION_Y, targetY, t)
+        } finally {
+            endUndoBatch()
+        }
+    }
+
+    /**
+     * Reset all transform properties and keyframe tracks of layer [id] to defaults.
+     */
+    fun resetLayerTransform(id: String) {
+        if (id in _locked.value) return
+        val layer = _layers.value.firstOrNull { it.id == id } ?: return
+        if (isBackground(layer)) return
+        pushUndo()
+        _layers.update { layers ->
+            layers.map { l ->
+                if (l.id != id) l else l.copy(
+                    offsetX = 0f,
+                    offsetY = 0f,
+                    scale = 1f,
+                    alpha = 1f,
+                    keys = listOf(KeyframeUi(0L, 0f)),
+                    xKeys = emptyList(),
+                    yKeys = emptyList(),
+                    scaleKeys = emptyList(),
+                    alphaKeys = emptyList(),
+                )
+            }
+        }
+        _hasEdits.value = true
+    }
+
+    /**
+     * Trim the left edge (in-point) of layer [id] to [newStartMs] while keeping its
+     * out-point (`startMs + durationMs`) anchored in project time.
+     */
+    fun trimLayerStart(id: String, newStartMs: Long) {
+        if (id in _locked.value) return
+        val layer = _layers.value.firstOrNull { it.id == id } ?: return
+        if (isBackground(layer)) return
+        val endMs = layer.startMs + layer.durationMs
+        val maxStart = (endMs - MIN_LAYER_DURATION_MS).coerceAtLeast(0L)
+        val clampedStart = newStartMs.coerceIn(0L, maxStart)
+        val newDuration = (endMs - clampedStart).coerceIn(MIN_LAYER_DURATION_MS, MAX_LAYER_DURATION_MS)
+        if (clampedStart == layer.startMs && newDuration == layer.durationMs) return
+        pushUndo("trimStart:$id")
+        _layers.update { layers ->
+            layers.map { l ->
+                if (l.id != id) l else l.copy(startMs = clampedStart, durationMs = newDuration)
+            }
+        }
+        _hasEdits.value = true
+    }
+
+    /**
+     * Trim the right edge (out-point) of layer [id] to [newEndMs] while keeping
+     * its `startMs` anchored in project time.
+     */
+    fun trimLayerEnd(id: String, newEndMs: Long) {
+        if (id in _locked.value) return
+        val layer = _layers.value.firstOrNull { it.id == id } ?: return
+        if (isBackground(layer)) return
+        val newDuration = (newEndMs - layer.startMs).coerceIn(MIN_LAYER_DURATION_MS, MAX_LAYER_DURATION_MS)
+        if (newDuration == layer.durationMs) return
+        pushUndo("trimEnd:$id")
+        _layers.update { layers ->
+            layers.map { l ->
+                if (l.id != id) l else l.copy(durationMs = newDuration)
+            }
+        }
+        _hasEdits.value = true
+    }
+
+    /**
+     * Split layer [id] at [atMs] (defaulting to the current playhead) into two
+     * back-to-back clips. Returns the new right-hand layer's ID, or null if the
+     * layer cannot be split at [atMs].
+     */
+    fun splitLayer(id: String, atMs: Long = _playheadMs.value): String? {
+        if (id in _locked.value) return null
+        val list = _layers.value
+        val idx = list.indexOfFirst { it.id == id }
+        if (idx < 0) return null
+        val layer = list[idx]
+        if (isBackground(layer)) return null
+        val minCut = layer.startMs + MIN_LAYER_DURATION_MS
+        val maxCut = layer.startMs + layer.durationMs - MIN_LAYER_DURATION_MS
+        if (atMs !in minCut..maxCut) return null
+
+        pushUndo()
+        val leftDuration = atMs - layer.startMs
+        val rightDuration = (layer.startMs + layer.durationMs) - atMs
+        val newId = idSeq.getAndIncrement().toString()
+
+        fun splitTrackLeft(keys: List<KeyframeUi>, cutValue: Float): List<KeyframeUi> {
+            if (keys.isEmpty()) return emptyList()
+            val kept = keys.filter { it.timeMs <= atMs }
+            return if (kept.any { it.timeMs == atMs }) kept else (kept + KeyframeUi(atMs, cutValue)).sortedBy { it.timeMs }
+        }
+
+        fun splitTrackRight(keys: List<KeyframeUi>, cutValue: Float): List<KeyframeUi> {
+            if (keys.isEmpty()) return emptyList()
+            val kept = keys.filter { it.timeMs >= atMs }
+            return if (kept.any { it.timeMs == atMs }) kept else ( listOf(KeyframeUi(atMs, cutValue)) + kept ).sortedBy { it.timeMs }
+        }
+
+        val cutRot = rotationAt(layer, atMs)
+        val cutX = xAt(layer, atMs)
+        val cutY = yAt(layer, atMs)
+        val cutScale = scaleAt(layer, atMs)
+        val cutAlpha = alphaBaseAt(layer, atMs)
+
+        val leftLayer = layer.copy(
+            durationMs = leftDuration,
+            keys = splitTrackLeft(layer.keys, cutRot).ifEmpty { listOf(KeyframeUi(0L, cutRot)) },
+            xKeys = splitTrackLeft(layer.xKeys, cutX),
+            yKeys = splitTrackLeft(layer.yKeys, cutY),
+            scaleKeys = splitTrackLeft(layer.scaleKeys, cutScale),
+            alphaKeys = splitTrackLeft(layer.alphaKeys, cutAlpha),
+        )
+        val rightLayer = layer.copy(
+            id = newId,
+            startMs = atMs,
+            durationMs = rightDuration,
+            offsetX = if (layer.xKeys.isEmpty()) layer.offsetX else cutX,
+            offsetY = if (layer.yKeys.isEmpty()) layer.offsetY else cutY,
+            scale = if (layer.scaleKeys.isEmpty()) layer.scale else cutScale,
+            alpha = if (layer.alphaKeys.isEmpty()) layer.alpha else cutAlpha,
+            transition = null,
+            keys = splitTrackRight(layer.keys, cutRot).ifEmpty { listOf(KeyframeUi(atMs, cutRot)) },
+            xKeys = splitTrackRight(layer.xKeys, cutX),
+            yKeys = splitTrackRight(layer.yKeys, cutY),
+            scaleKeys = splitTrackRight(layer.scaleKeys, cutScale),
+            alphaKeys = splitTrackRight(layer.alphaKeys, cutAlpha),
+            effects = layer.effects.map { it.copy(id = java.util.UUID.randomUUID().toString()) },
+        )
+
+        videoLocalPaths[id]?.let { videoLocalPaths[newId] = it }
+        videoFps[id]?.let { videoFps[newId] = it }
+        videoIsVideo[id]?.let { videoIsVideo[newId] = it }
+
+        val updated = list.toMutableList().apply {
+            set(idx, leftLayer)
+            add(idx + 1, rightLayer)
+        }
+        _layers.value = updated
+        _selectedId.value = newId
+        _hasEdits.value = true
+        if (rightLayer.kind == LayerKindUi.TEXT) {
+            scope.launch(Dispatchers.IO) { prewarmLayout(rightLayer) }
+        }
+        return newId
+    }
+
+    /**
+     * Duplicate layer [id] immediately above the source layer in drawing order.
+     * Returns the duplicate's ID, or null if [id] is the background layer or missing.
+     */
+    fun duplicateLayer(id: String): String? {
+        val list = _layers.value
+        val idx = list.indexOfFirst { it.id == id }
+        if (idx < 0) return null
+        val src = list[idx]
+        if (isBackground(src)) return null
+
+        pushUndo()
+        val newId = idSeq.getAndIncrement().toString()
+        val shift = if (src.kind == LayerKindUi.AUDIO) 0f else 16f
+        val dupName = if (src.kind == LayerKindUi.SHAPE) {
+            src.name
+        } else {
+            "${src.name} Copy".take(60)
+        }
+        val copy = src.copy(
+            id = newId,
+            name = dupName,
+            offsetX = (src.offsetX + shift).coerceIn(-1000f, 1000f),
+            offsetY = (src.offsetY + shift).coerceIn(-1000f, 1000f),
+            effects = src.effects.map { it.copy(id = java.util.UUID.randomUUID().toString()) },
+        )
+        videoLocalPaths[id]?.let { videoLocalPaths[newId] = it }
+        videoFps[id]?.let { videoFps[newId] = it }
+        videoIsVideo[id]?.let { videoIsVideo[newId] = it }
+
+        val updated = list.toMutableList().apply {
+            add(idx + 1, copy)
+        }
+        _layers.value = updated
+        _selectedId.value = newId
+        _hasEdits.value = true
+        if (copy.kind == LayerKindUi.TEXT) {
+            scope.launch(Dispatchers.IO) { prewarmLayout(copy) }
+        }
+        return newId
     }
 
     // --- The layer's effect chain -------------------------------------------------
@@ -3419,6 +3943,10 @@ class EditorState {
         coalesceKey: String? = null,
         transform: (List<Effect>) -> List<Effect>,
     ): Boolean {
+        val current = _layers.value.firstOrNull { it.id == layerId } ?: return false
+        val previewNext = transform(current.effects)
+        if (previewNext == current.effects) return false
+        pushUndo(coalesceKey)
         var changed = false
         _layers.update { layers ->
             layers.map { layer ->
