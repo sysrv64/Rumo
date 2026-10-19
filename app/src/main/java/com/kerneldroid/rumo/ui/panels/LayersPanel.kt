@@ -3,7 +3,6 @@ package com.kerneldroid.rumo.ui.panels
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,7 +19,11 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.ArrowDownward
+import androidx.compose.material.icons.rounded.ArrowUpward
 import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.ContentCopy
+import androidx.compose.material.icons.rounded.ContentCut
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.DragHandle
 import androidx.compose.material.icons.rounded.Layers
@@ -50,7 +53,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.pluralStringResource
@@ -61,26 +63,22 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import com.kerneldroid.rumo.R
 import com.kerneldroid.rumo.ui.EditorState
-import com.kerneldroid.rumo.ui.layerDisplayName
 import com.kerneldroid.rumo.ui.LayerKindUi
 import com.kerneldroid.rumo.ui.LayerUi
 import com.kerneldroid.rumo.ui.ShapeNames
-import com.kerneldroid.rumo.ui.shapeOrdinalOf
 import com.kerneldroid.rumo.ui.formatTime
+import com.kerneldroid.rumo.ui.layerDisplayName
+import com.kerneldroid.rumo.ui.shapeOrdinalOf
 import com.kerneldroid.rumo.ui.theme.RumoSpacing
+import com.kerneldroid.rumo.ui.theme.editor
 import com.kerneldroid.rumo.ui.theme.hapticConfirm
 import com.kerneldroid.rumo.ui.theme.hapticLongPress
 import com.kerneldroid.rumo.ui.theme.hapticToggle
 
 /**
- * Layer stack page. Row anatomy follows the reference editors
- * (Concat `timeline/track-header.slint`, Drift `TrackHeaderColumn.qml`):
- * grip · kind mark · name+badge · spacer · lock · overflow. Hide and Delete
- * live in the overflow: an always-visible eye was one tap-target too many, and
- * the badge says `HIDDEN` so the state stays legible.
- *
- * Drag a row by its handle to reorder: the drag steps one slot each time it crosses
- * half a row, so the order follows the finger without a floating ghost.
+ * Layer stack page with frontmost-first display, drag-to-reorder handle, direct
+ * 1-tap visibility eye & lock toggles, and rich layer actions (Duplicate, Split
+ * at Playhead, Move Up/Down, Change Shape / Rename, Delete).
  */
 @Composable
 fun LayersPanel(
@@ -89,22 +87,15 @@ fun LayersPanel(
     selectedId: String?,
     onSelect: (String) -> Unit,
     onAddLayer: () -> Unit,
-    /// Layer deletion comes in from outside, so the screen can offer an undo.
-    /// The panel used to delete it itself, and the only undo lived in the top bar's menu.
     onDeleteLayer: (String) -> Unit = { state.removeLayer(it) },
     modifier: Modifier = Modifier,
 ) {
     val locked by state.locked.collectAsState()
     val trisMap by state.shapeTris.collectAsState()
+    val playheadMs by state.playheadMs.collectAsState()
     val haptic = LocalHapticFeedback.current
     val density = LocalDensity.current
     val rowStep = with(density) { (LayerRowHeight + RumoSpacing.s).toPx() }
-    // The drag coroutine is keyed on the layer id alone so a reorder cannot
-    // cancel a gesture in flight, which means the list it captured at
-    // composition time goes stale the moment the first step lands. Reading the
-    // live list through `rememberUpdatedState` is what keeps the next step
-    // counting from the *current* position instead of the original one (the
-    // stale snapshot made a downward drag oscillate around the start index).
     val liveLayers by rememberUpdatedState(layers)
 
     val reorder = rememberReorderState()
@@ -144,28 +135,17 @@ fun LayersPanel(
             ),
             verticalArrangement = Arrangement.spacedBy(RumoSpacing.s),
         ) {
-            // The list is shown **frontmost first**.
-            //
-            // The order in the model is the drawing order: index 0 is drawn
-            // first, that is, it lands lowest of all. The panel, though, drew the
-            // list as it was, so the top row was the **rearmost** layer, and
-            // dragging down brought a layer forward. The user moved a photo up
-            // expecting to see it on top — and it went backwards.
-            //
-            // The flip is here, not in the model: the document order stays what
-            // is written to the file, and already saved projects do not change
-            // their look because of the fix. The indices for the gesture are
-            // recomputed below.
             val displayed = layers.asReversed()
             itemsIndexed(displayed, key = { _, layer -> layer.id }) { _, layer ->
                 val isSelected = layer.id == selectedId
+                val isBg = EditorState.isBackground(layer)
+                val modelIdx = layers.indexOfFirst { it.id == layer.id }
                 val tris = if (layer.kind == LayerKindUi.SHAPE) {
                     trisMap[shapeOrdinalOf(layer.name)]
                 } else {
                     null
                 }
-                // `buildString` is a plain lambda, not a composable scope, so the
-                // resources are read before entering it.
+                val totalKeys = state.allKeyframeTimes(layer).size
                 val kindLabel = stringResource(layer.kind.labelRes)
                 val trisLabel = tris?.let { stringResource(R.string.panel_layers_tris, it) }
                 val durationLabel =
@@ -174,11 +154,11 @@ fun LayersPanel(
                     } else {
                         null
                     }
-                val keysLabel = if (layer.keys.size > 1) {
+                val keysLabel = if (totalKeys > 0) {
                     pluralStringResource(
                         R.plurals.panel_layers_keys,
-                        layer.keys.size,
-                        layer.keys.size,
+                        totalKeys,
+                        totalKeys,
                     )
                 } else {
                     null
@@ -201,8 +181,7 @@ fun LayersPanel(
                             append(" · $durationLabel")
                     }
                     if (keysLabel != null) append(" · $keysLabel")
-                    // The row no longer carries an eye icon, so the badge is the
-                    // only place that can say a layer is off the frame.
+                    if (layer.effects.isNotEmpty()) append(" · FX ${layer.effects.size}")
                     if (hiddenLabel != null) append(" · $hiddenLabel")
                     if (lockedLabel != null) append(" · $lockedLabel")
                 }
@@ -211,6 +190,9 @@ fun LayersPanel(
                     layer = layer,
                     badge = badge,
                     count = layers.size,
+                    isBackground = isBg,
+                    canMoveUp = modelIdx in 0 until layers.lastIndex,
+                    canMoveDown = modelIdx > 0,
                     selected = isSelected,
                     locked = layer.id in locked,
                     dragging = reorder.isDragging(layer.id),
@@ -218,22 +200,36 @@ fun LayersPanel(
                     onSelect = { onSelect(layer.id) },
                     onToggleVisible = { state.toggleVisibility(layer.id); haptic.hapticToggle(layer.visible) },
                     onToggleLock = { state.toggleLocked(layer.id); haptic.hapticToggle(true) },
+                    onDuplicate = {
+                        if (state.duplicateLayer(layer.id) != null) {
+                            haptic.hapticConfirm()
+                        }
+                    },
+                    onSplit = {
+                        if (state.splitLayer(layer.id, playheadMs) != null) {
+                            haptic.hapticConfirm()
+                        }
+                    },
+                    onMoveUp = {
+                        if (modelIdx in 0 until layers.lastIndex) {
+                            state.moveLayerOrder(modelIdx, modelIdx + 1)
+                            haptic.hapticToggle(true)
+                        }
+                    },
+                    onMoveDown = {
+                        if (modelIdx > 0) {
+                            state.moveLayerOrder(modelIdx, modelIdx - 1)
+                            haptic.hapticToggle(false)
+                        }
+                    },
                     onRename = { renameTarget = layer },
                     onChangeShape = { shapeTarget = layer },
                     onDelete = { onDeleteLayer(layer.id); haptic.hapticLongPress() },
-                    // The same shared gesture as in the effects chain
-                    // (EditorControls.reorderHandle): bound to the handle and
-                    // starting immediately. One implementation for two panels —
-                    // so the behaviour does not drift apart, the way it once did.
                     dragModifier = Modifier.reorderHandle(
                         state = reorder,
                         key = layer.id,
                         rowStepPx = rowStep,
                         onReorder = { delta ->
-                            // The screen is flipped relative to the model, so the
-                            // step is flipped too: dragging up (delta < 0) must
-                            // bring the layer forward, that is, increase the
-                            // index in the model.
                             val from = liveLayers.indexOfFirst { it.id == layer.id }
                             if (from >= 0) state.moveLayerOrder(from, from - delta)
                             haptic.hapticToggle(delta < 0)
@@ -323,6 +319,9 @@ private fun LayerRow(
     layer: LayerUi,
     badge: String,
     count: Int,
+    isBackground: Boolean,
+    canMoveUp: Boolean,
+    canMoveDown: Boolean,
     selected: Boolean,
     locked: Boolean,
     dragging: Boolean,
@@ -330,6 +329,10 @@ private fun LayerRow(
     onSelect: () -> Unit,
     onToggleVisible: () -> Unit,
     onToggleLock: () -> Unit,
+    onDuplicate: () -> Unit,
+    onSplit: () -> Unit,
+    onMoveUp: () -> Unit,
+    onMoveDown: () -> Unit,
     onRename: () -> Unit,
     onChangeShape: () -> Unit,
     onDelete: () -> Unit,
@@ -360,11 +363,6 @@ private fun LayerRow(
             .padding(start = RumoSpacing.xs, end = RumoSpacing.xs),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        // The gesture lives on the handle, not on the row. An immediate drag
-        // hung on the whole row would swallow the list's scrolling: a vertical
-        // swipe on a row would travel with the row instead of scrolling the
-        // list. The handle is a finger-sized target, and that is what it is drawn
-        // for.
         Box(
             modifier = Modifier
                 .size(MinTouchTarget)
@@ -402,13 +400,41 @@ private fun LayerRow(
                 overflow = TextOverflow.Ellipsis,
             )
         }
-        // The lock was removed from the row: it duplicated the "Lock" item in the
-        // menu below, that is, it was a second control for one verb — and on top
-        // of that it showed a state an unlocked layer does not have. One entry
-        // point remains, in the menu, and a locked layer is still visible: the
-        // row's badge says "LOCKED", and that is a state, not a button.
+        // Direct 1-tap visibility eye toggle on the layer row.
+        IconButton(
+            onClick = onToggleVisible,
+            modifier = Modifier.size(36.dp),
+        ) {
+            Icon(
+                imageVector = if (layer.visible) Icons.Rounded.Visibility else Icons.Rounded.VisibilityOff,
+                contentDescription = stringResource(if (layer.visible) R.string.panel_hide else R.string.panel_show),
+                tint = if (layer.visible) {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f)
+                },
+                modifier = Modifier.size(18.dp),
+            )
+        }
+        if (!isBackground) {
+            IconButton(
+                onClick = onToggleLock,
+                modifier = Modifier.size(36.dp),
+            ) {
+                Icon(
+                    imageVector = if (locked) Icons.Rounded.Lock else Icons.Rounded.LockOpen,
+                    contentDescription = stringResource(if (locked) R.string.panel_unlock else R.string.panel_lock),
+                    tint = if (locked) {
+                        MaterialTheme.editor.warning
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f)
+                    },
+                    modifier = Modifier.size(17.dp),
+                )
+            }
+        }
         Box {
-            IconButton(onClick = { menuOpen = true }) {
+            IconButton(onClick = { menuOpen = true }, modifier = Modifier.size(36.dp)) {
                 Icon(
                     imageVector = Icons.Rounded.MoreVert,
                     contentDescription = stringResource(R.string.panel_layers_menu),
@@ -416,24 +442,66 @@ private fun LayerRow(
                 )
             }
             DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                if (!isBackground) {
+                    DropdownMenuItem(
+                        text = {
+                            Text(
+                                stringResource(
+                                    if (layer.kind == LayerKindUi.SHAPE) {
+                                        R.string.panel_layers_change_shape
+                                    } else {
+                                        R.string.panel_rename
+                                    },
+                                ),
+                            )
+                        },
+                        onClick = {
+                            menuOpen = false
+                            if (layer.kind == LayerKindUi.SHAPE) onChangeShape() else onRename()
+                        },
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.panel_layers_duplicate)) },
+                        onClick = {
+                            menuOpen = false
+                            onDuplicate()
+                        },
+                        leadingIcon = {
+                            Icon(Icons.Rounded.ContentCopy, contentDescription = null)
+                        },
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.panel_layers_split)) },
+                        onClick = {
+                            menuOpen = false
+                            onSplit()
+                        },
+                        enabled = !locked,
+                        leadingIcon = {
+                            Icon(Icons.Rounded.ContentCut, contentDescription = null)
+                        },
+                    )
+                }
                 DropdownMenuItem(
-                    // A SHAPE layer's name *is* the shape kind the engine draws
-                    // (see shapeOrdinalOf), so it gets "Change shape" instead of
-                    // a free-text rename that would erase it from the frame.
-                    text = {
-                        Text(
-                            stringResource(
-                                if (layer.kind == LayerKindUi.SHAPE) {
-                                    R.string.panel_layers_change_shape
-                                } else {
-                                    R.string.panel_rename
-                                },
-                            ),
-                        )
-                    },
+                    text = { Text(stringResource(R.string.panel_layers_move_up)) },
                     onClick = {
                         menuOpen = false
-                        if (layer.kind == LayerKindUi.SHAPE) onChangeShape() else onRename()
+                        onMoveUp()
+                    },
+                    enabled = canMoveUp,
+                    leadingIcon = {
+                        Icon(Icons.Rounded.ArrowUpward, contentDescription = null)
+                    },
+                )
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.panel_layers_move_down)) },
+                    onClick = {
+                        menuOpen = false
+                        onMoveDown()
+                    },
+                    enabled = canMoveDown,
+                    leadingIcon = {
+                        Icon(Icons.Rounded.ArrowDownward, contentDescription = null)
                     },
                 )
                 DropdownMenuItem(
@@ -459,45 +527,47 @@ private fun LayerRow(
                         )
                     },
                 )
-                DropdownMenuItem(
-                    text = {
-                        Text(
-                            stringResource(
-                                if (locked) R.string.panel_unlock else R.string.panel_lock,
-                            ),
-                        )
-                    },
-                    onClick = {
-                        menuOpen = false
-                        onToggleLock()
-                    },
-                    leadingIcon = {
-                        Icon(
-                            imageVector = if (locked) {
-                                Icons.Rounded.LockOpen
-                            } else {
-                                Icons.Rounded.Lock
-                            },
-                            contentDescription = null,
-                        )
-                    },
-                )
-                HorizontalDivider()
-                DropdownMenuItem(
-                    text = { Text(stringResource(R.string.panel_delete)) },
-                    onClick = {
-                        menuOpen = false
-                        onDelete()
-                    },
-                    enabled = count > 1,
-                    leadingIcon = {
-                        Icon(
-                            Icons.Rounded.Delete,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.error,
-                        )
-                    },
-                )
+                if (!isBackground) {
+                    DropdownMenuItem(
+                        text = {
+                            Text(
+                                stringResource(
+                                    if (locked) R.string.panel_unlock else R.string.panel_lock,
+                                ),
+                            )
+                        },
+                        onClick = {
+                            menuOpen = false
+                            onToggleLock()
+                        },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = if (locked) {
+                                    Icons.Rounded.LockOpen
+                                } else {
+                                    Icons.Rounded.Lock
+                                },
+                                contentDescription = null,
+                            )
+                        },
+                    )
+                    HorizontalDivider()
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.panel_delete)) },
+                        onClick = {
+                            menuOpen = false
+                            onDelete()
+                        },
+                        enabled = count > 1,
+                        leadingIcon = {
+                            Icon(
+                                Icons.Rounded.Delete,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.error,
+                            )
+                        },
+                    )
+                }
             }
         }
     }
