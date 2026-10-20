@@ -345,6 +345,10 @@ fn pixelate(layer: &Img, size_px: f32, shape: f32) -> Img {
     };
     let n = s as i32;
     let mut out = Img::new(w, h);
+    // Cache the most recently computed block average `(p0_x_bits, p0_y_bits, rgba)`:
+    // adjacent pixels in the same cell share the exact same `p0` origin, so reusing
+    // the block average avoids recomputing the `n * n` inner loop `s` times per row.
+    let mut cached_cell: Option<(u32, u32, [f32; 4])> = None;
     for y in 0..h {
         for x in 0..w {
             let p = [x as f32 + 0.5, y as f32 + 0.5];
@@ -360,6 +364,15 @@ fn pixelate(layer: &Img, size_px: f32, shape: f32) -> Img {
                 ((c[0] - 0.5 * s) / s).floor() * s,
                 ((c[1] - 0.5 * s) / s).floor() * s,
             ];
+            let key_x = p0[0].to_bits();
+            let key_y = p0[1].to_bits();
+            if let Some((cx, cy, avg)) = cached_cell
+                && cx == key_x
+                && cy == key_y
+            {
+                out.put(x, y, avg);
+                continue;
+            }
             let mut acc = [0.0f32; 4];
             let mut count = 0.0f32;
             for j in 0..n {
@@ -372,11 +385,9 @@ fn pixelate(layer: &Img, size_px: f32, shape: f32) -> Img {
                 }
             }
             let count = if count > 0.0 { count } else { 1.0 };
-            out.put(
-                x,
-                y,
-                [acc[0] / count, acc[1] / count, acc[2] / count, acc[3] / count],
-            );
+            let avg = [acc[0] / count, acc[1] / count, acc[2] / count, acc[3] / count];
+            cached_cell = Some((key_x, key_y, avg));
+            out.put(x, y, avg);
         }
     }
     out
@@ -434,6 +445,19 @@ fn blur_pass(
     let ri = r.clamp(0.0, 512.0) as i32;
     let sigma = (radius / 3.0).max(1e-4);
     let texel = [1.0 / ow.max(1) as f32, 1.0 / oh.max(1) as f32];
+    // Precompute the 1D kernel tap weights once outside the pixel loops instead of
+    // evaluating `(-0.5 * z * z).exp()` `ow * oh * (2 * ri + 1)` times per pass.
+    let box_w = 1.0 / (2.0 * ri as f32 + 1.0);
+    let weights: Vec<f32> = (-ri..=ri)
+        .map(|i| {
+            if is_box {
+                box_w
+            } else {
+                let z = (i as f32) / sigma;
+                (-0.5 * z * z).exp()
+            }
+        })
+        .collect();
     let mut out = Img::new(ow, oh);
     for y in 0..oh {
         for x in 0..ow {
@@ -444,13 +468,9 @@ fn blur_pass(
             let mut acc = [0.0f32; 3];
             let mut aa = 0.0f32;
             let mut wsum = 0.0f32;
-            for i in -ri..=ri {
+            for (tap_idx, i) in (-ri..=ri).enumerate() {
                 let t = i as f32;
-                let mut w = 1.0 / (2.0 * ri as f32 + 1.0);
-                if !is_box {
-                    let z = t / sigma;
-                    w = (-0.5 * z * z).exp();
-                }
+                let mut w = weights[tap_idx];
                 let s = input.sample(
                     uv[0] + axis[0] * t * texel[0],
                     uv[1] + axis[1] * t * texel[1],
@@ -488,6 +508,12 @@ fn mask_blur_pass(
     let ri = radius.round().clamp(0.0, 512.0) as i32;
     let sigma = (radius / 3.0).max(1e-4);
     let texel = [1.0 / ow.max(1) as f32, 1.0 / oh.max(1) as f32];
+    let weights: Vec<f32> = (-ri..=ri)
+        .map(|i| {
+            let z = (i as f32) / sigma;
+            (-0.5 * z * z).exp()
+        })
+        .collect();
     let read = |u: f32, v: f32| -> f32 {
         let s = input.sample(u, v);
         if from_layer { s[3] } else { s[0] }
@@ -501,10 +527,9 @@ fn mask_blur_pass(
             ];
             let mut acc = 0.0f32;
             let mut wsum = 0.0f32;
-            for i in -ri..=ri {
+            for (tap_idx, i) in (-ri..=ri).enumerate() {
                 let t = i as f32;
-                let z = t / sigma;
-                let w = (-0.5 * z * z).exp();
+                let w = weights[tap_idx];
                 let mut m = read(uv[0] + base[0] * t * texel[0], uv[1] + base[1] * t * texel[1]);
                 if dilation && spread > 0.5 {
                     let lo = read(

@@ -1375,12 +1375,12 @@ fn build_ex_scene(
     // The time window is the second gate (the editor filters before it sends the
     // arrays); a draw outside its window is dropped together with its chain
     // entry, so the survivors keep the chains they were sent.
-    let mut kept_specs: Vec<ShapeSpec> = Vec::new();
-    let mut kept_windows: Vec<DrawWindow> = Vec::new();
+    let mut kept_specs: Vec<ShapeSpec> = Vec::with_capacity(o.len());
+    let mut kept_windows: Vec<DrawWindow> = Vec::with_capacity(o.len());
     // The caller's index of each surviving spec, kept so the effect chains can
     // be expanded to match the draws `preview_shape_draws` emits: an SVG spec
     // emits one draw per sub-mesh, so a single spec is not always one draw.
-    let mut kept_source: Vec<usize> = Vec::new();
+    let mut kept_source: Vec<usize> = Vec::with_capacity(o.len());
     for i in 0..o.len() {
         if !window_allows(shape_windows, i, time_ms) {
             continue;
@@ -1436,17 +1436,18 @@ fn build_ex_scene(
         Vec::new()
     };
 
+    let tex_cap = text.0.len() + tex.0.len();
     #[cfg(test)]
-    let mut textured: Vec<(Arc<TextureImage>, TexturedMesh, [f32; 4])> = Vec::new();
-    let mut quads: Vec<TexturedQuad> = Vec::new();
-    let mut textures: Vec<SceneTexture> = Vec::new();
+    let mut textured: Vec<(Arc<TextureImage>, TexturedMesh, [f32; 4])> = Vec::with_capacity(tex_cap);
+    let mut quads: Vec<TexturedQuad> = Vec::with_capacity(tex_cap);
+    let mut textures: Vec<SceneTexture> = Vec::with_capacity(tex.0.len() + 1);
     // For every draw that survives, the index it had in the caller's `textures`
     // chain group: the text entries first, then the image entries, exactly in
     // the order they are pushed below.
-    let mut texture_source: Vec<usize> = Vec::new();
+    let mut texture_source: Vec<usize> = Vec::with_capacity(tex_cap);
     // The global order of every draw in `quads`, parallel to it: a text entry's
     // own order for the text draws, the image's for the images.
-    let mut quad_orders: Vec<i32> = Vec::new();
+    let mut quad_orders: Vec<i32> = Vec::with_capacity(tex_cap);
 
     // Text layers: one shared atlas snapshot, invalid handles skipped.
     // Rotation pivots around the frame centre — same as the Kotlin

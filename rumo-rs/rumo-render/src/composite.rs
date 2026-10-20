@@ -565,7 +565,7 @@ pub fn preview_shape_draws(
     let scale = height as f32 * 0.6 / base;
     let cx = width as f32 / 2.0;
     let cy = height as f32 / 2.0;
-    let mut out = Vec::new();
+    let mut out = Vec::with_capacity(specs.len());
     for (i, s) in specs.iter().enumerate() {
         // The window gate is evaluated once per spec, before any expansion: a
         // window is written for a spec, not for the draws it emits, so the
