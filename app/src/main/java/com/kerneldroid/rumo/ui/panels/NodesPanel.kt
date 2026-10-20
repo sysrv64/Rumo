@@ -133,7 +133,10 @@ private fun stagesFor(kind: LayerKindUi): List<NodeStage> = when (kind) {
     )
     LayerKindUi.MEDIA -> listOf(
         NodeStage.SOURCE,
+        NodeStage.TRANSFORM,
+        NodeStage.APPEARANCE,
         NodeStage.TRANSITION,
+        NodeStage.TIME,
         NodeStage.OUTPUT,
     )
     LayerKindUi.AUDIO -> listOf(NodeStage.SOURCE, NodeStage.OUTPUT)
@@ -339,6 +342,14 @@ private fun FxNodeBody(
                 },
             ) {
                 Text(stringResource(if (effect.enabled) R.string.panel_nodes_disable else R.string.panel_nodes_enable))
+            }
+            TextButton(
+                onClick = {
+                    state.resetEffectParams(layerId, effect.id)
+                    haptic.hapticConfirm()
+                },
+            ) {
+                Text(stringResource(R.string.panel_effects_reset))
             }
             Spacer(modifier = Modifier.weight(1f))
             TextButton(
@@ -652,34 +663,60 @@ private fun NodeBody(
         }
 
         NodeStage.TRANSFORM -> Column {
-            var dragX by remember(layer.id) { mutableStateOf<Float?>(null) }
-            var dragY by remember(layer.id) { mutableStateOf<Float?>(null) }
+            val curX = state.xAt(layer, playheadMs)
+            val curY = state.yAt(layer, playheadMs)
+            val curScale = state.scaleAt(layer, playheadMs)
             ParamSlider(
                 label = stringResource(R.string.panel_inspector_offset_x),
-                icon = Icons.Rounded.SwapVert,
+                icon = Icons.Rounded.SwapHoriz,
                 enabled = !locked,
-                value = (dragX ?: layer.offsetX).coerceIn(-400f, 400f),
-                valueRange = -400f..400f,
-                valueText = "${(dragX ?: layer.offsetX).toInt()} px",
+                value = curX.coerceIn(-600f, 600f),
+                valueRange = -600f..600f,
+                valueText = "${curX.roundToInt()} px",
                 onValueChange = {
-                    dragX = it
-                    state.setOffset(layer.id, it, dragY ?: layer.offsetY)
+                    state.setPropertyOrKeyframe(layer.id, EditorState.KeyTrack.POSITION_X, it, playheadMs)
                 },
-                onValueChangeFinished = { dragX = null },
+                onValueChangeFinished = { state.endGesture() },
             )
             ParamSlider(
                 label = stringResource(R.string.panel_inspector_offset_y),
-                icon = Icons.Rounded.SwapHoriz,
+                icon = Icons.Rounded.SwapVert,
                 enabled = !locked,
-                value = (dragY ?: layer.offsetY).coerceIn(-400f, 400f),
-                valueRange = -400f..400f,
-                valueText = "${(dragY ?: layer.offsetY).toInt()} px",
+                value = curY.coerceIn(-600f, 600f),
+                valueRange = -600f..600f,
+                valueText = "${curY.roundToInt()} px",
                 onValueChange = {
-                    dragY = it
-                    state.setOffset(layer.id, dragX ?: layer.offsetX, it)
+                    state.setPropertyOrKeyframe(layer.id, EditorState.KeyTrack.POSITION_Y, it, playheadMs)
                 },
-                onValueChangeFinished = { dragY = null },
+                onValueChangeFinished = { state.endGesture() },
             )
+            ParamSlider(
+                label = stringResource(R.string.panel_inspector_scale),
+                icon = Icons.Rounded.OpenInFull,
+                enabled = !locked,
+                value = curScale.coerceIn(0.05f, 4f),
+                valueRange = 0.05f..4f,
+                valueText = "${(curScale * 100f).roundToInt()}%",
+                onValueChange = {
+                    state.setPropertyOrKeyframe(layer.id, EditorState.KeyTrack.SCALE, it, playheadMs)
+                },
+                onValueChangeFinished = { state.endGesture() },
+            )
+            if (layer.kind != LayerKindUi.MEDIA) {
+                val curRot = state.rotationAt(layer, playheadMs)
+                ParamSlider(
+                    label = stringResource(R.string.panel_inspector_rotation),
+                    icon = Icons.Rounded.RotateRight,
+                    enabled = !locked,
+                    value = curRot.coerceIn(-180f, 180f),
+                    valueRange = -180f..180f,
+                    valueText = "${curRot.roundToInt()}°",
+                    onValueChange = {
+                        state.setPropertyOrKeyframe(layer.id, EditorState.KeyTrack.ROTATION, it, playheadMs)
+                    },
+                    onValueChangeFinished = { state.endGesture() },
+                )
+            }
             if (locked) {
                 Text(
                     text = stringResource(R.string.panel_nodes_locked),
@@ -690,18 +727,17 @@ private fun NodeBody(
         }
 
         NodeStage.APPEARANCE -> Column {
-            var dragAlpha by remember(layer.id) { mutableStateOf<Float?>(null) }
+            val curAlpha = state.alphaBaseAt(layer, playheadMs)
             ParamSlider(
                 label = stringResource(R.string.panel_inspector_opacity),
                 icon = Icons.Rounded.Opacity,
-                value = (dragAlpha ?: layer.alpha).coerceIn(0.02f, 1f),
+                value = curAlpha.coerceIn(0.02f, 1f),
                 valueRange = 0.02f..1f,
-                valueText = "${((dragAlpha ?: layer.alpha) * 100).toInt()}%",
+                valueText = "${(curAlpha * 100f).roundToInt()}%",
                 onValueChange = {
-                    dragAlpha = it
-                    state.setAlpha(layer.id, it)
+                    state.setPropertyOrKeyframe(layer.id, EditorState.KeyTrack.ALPHA, it, playheadMs)
                 },
-                onValueChangeFinished = { dragAlpha = null },
+                onValueChangeFinished = { state.endGesture() },
             )
         }
 
@@ -917,9 +953,10 @@ fun NodeGraphOverlay(
                 ) {
                     // The wire is a graph line, not data: it follows the scheme.
                     val wireColor = MaterialTheme.editor.lineStrong
+                    val wirePath = remember { Path() }
                     Canvas(modifier = Modifier.fillMaxSize()) {
-                        // Dot grid, 24dp pitch (Concat grid #ffffff24).
-                        val pitch = 24.dp.toPx()
+                        // Dot grid, 24dp pitch (clamped to avoid excessive draw calls on large canvases).
+                        val pitch = 24.dp.toPx().coerceAtLeast(16f)
                         var x = 0f
                         while (x < size.width) {
                             var y = 0f
@@ -933,7 +970,7 @@ fun NodeGraphOverlay(
                             }
                             x += pitch
                         }
-                        // Wires between consecutive node boxes.
+                        // Wires between consecutive node boxes using a single reusable Path.
                         for (i in 0 until nodes.size - 1) {
                             val from = positionOf(i, nodeKey(layer?.id, nodes[i]))
                             val to = positionOf(i + 1, nodeKey(layer?.id, nodes[i + 1]))
@@ -941,12 +978,11 @@ fun NodeGraphOverlay(
                             val y1 = from.second + nodeHPx
                             val x2 = to.first + nodeWPx / 2f
                             val y2 = to.second
-                            val path = Path().apply {
-                                moveTo(x1, y1)
-                                cubicTo(x1, y1 + (y2 - y1) * 0.5f, x2, y2 - (y2 - y1) * 0.5f, x2, y2)
-                            }
+                            wirePath.reset()
+                            wirePath.moveTo(x1, y1)
+                            wirePath.cubicTo(x1, y1 + (y2 - y1) * 0.5f, x2, y2 - (y2 - y1) * 0.5f, x2, y2)
                             drawPath(
-                                path = path,
+                                path = wirePath,
                                 color = wireColor,
                                 style = Stroke(width = 2.dp.toPx()),
                             )

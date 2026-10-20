@@ -819,6 +819,52 @@ fun InspectorPanel(
                             onValueChange = { state.setDuration(layer.id, it.toLong()) },
                             onValueChangeFinished = { state.endGesture() },
                         )
+                        if (!isBg) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .horizontalScroll(rememberScrollState()),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                InputChip(
+                                    selected = false,
+                                    onClick = {
+                                        if (state.stretchLayerDuration(layer.id, 0.5f)) {
+                                            haptic.hapticConfirm()
+                                        }
+                                    },
+                                    enabled = !locked,
+                                    label = { Text(stringResource(R.string.panel_inspector_stretch_half), style = EditorType.micro) },
+                                    leadingIcon = { Icon(Icons.Rounded.Speed, contentDescription = null, modifier = Modifier.size(14.dp)) },
+                                    modifier = Modifier.height(28.dp),
+                                )
+                                InputChip(
+                                    selected = false,
+                                    onClick = {
+                                        if (state.stretchLayerDuration(layer.id, 2.0f)) {
+                                            haptic.hapticConfirm()
+                                        }
+                                    },
+                                    enabled = !locked,
+                                    label = { Text(stringResource(R.string.panel_inspector_stretch_double), style = EditorType.micro) },
+                                    leadingIcon = { Icon(Icons.Rounded.Speed, contentDescription = null, modifier = Modifier.size(14.dp)) },
+                                    modifier = Modifier.height(28.dp),
+                                )
+                                InputChip(
+                                    selected = false,
+                                    onClick = {
+                                        if (state.reverseLayerKeyframes(layer.id)) {
+                                            haptic.hapticConfirm()
+                                        }
+                                    },
+                                    enabled = !locked,
+                                    label = { Text(stringResource(R.string.panel_inspector_reverse_keys), style = EditorType.micro) },
+                                    leadingIcon = { Icon(Icons.Rounded.SwapHoriz, contentDescription = null, modifier = Modifier.size(14.dp)) },
+                                    modifier = Modifier.height(28.dp),
+                                )
+                            }
+                        }
                         Text(
                             text = stringResource(
                                 R.string.panel_inspector_drives_length,

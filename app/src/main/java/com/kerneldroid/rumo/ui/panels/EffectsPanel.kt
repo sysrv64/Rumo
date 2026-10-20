@@ -29,7 +29,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.ArrowDownward
 import androidx.compose.material.icons.rounded.ArrowUpward
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.material.icons.rounded.AutoFixHigh
+import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.DragHandle
 import androidx.compose.material.icons.rounded.RestartAlt
@@ -308,6 +310,8 @@ private fun EffectChainRow(
     dragOffset: Float,
     onSelect: () -> Unit,
     onToggle: () -> Unit,
+    onReset: () -> Unit,
+    onDuplicate: () -> Unit,
     onDelete: () -> Unit,
     dragModifier: Modifier,
 ) {
@@ -397,10 +401,28 @@ private fun EffectChainRow(
         // verbs: show/hide and delete.
         //
         // Reordering stayed where it was: drag-to-drop.
+        // Direct 1-tap enable/bypass toggle so comparing with/without an effect takes one tap.
+        IconButton(
+            onClick = onToggle,
+            modifier = Modifier.size(36.dp),
+        ) {
+            Icon(
+                imageVector = if (effect.enabled) {
+                    Icons.Rounded.Visibility
+                } else {
+                    Icons.Rounded.VisibilityOff
+                },
+                contentDescription = stringResource(
+                    if (effect.enabled) R.string.panel_hide else R.string.panel_show,
+                ),
+                tint = if (effect.enabled) normal else muted,
+                modifier = Modifier.size(18.dp),
+            )
+        }
         Box {
             IconButton(
                 onClick = { menuOpen = true },
-                modifier = Modifier.size(MinTouchTarget),
+                modifier = Modifier.size(36.dp),
             ) {
                 Icon(
                     imageVector = Icons.Rounded.MoreVert,
@@ -432,6 +454,34 @@ private fun EffectChainRow(
                     onClick = {
                         menuOpen = false
                         onToggle()
+                    },
+                )
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.panel_effects_duplicate)) },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Rounded.ContentCopy,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                        )
+                    },
+                    onClick = {
+                        menuOpen = false
+                        onDuplicate()
+                    },
+                )
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.panel_effects_reset)) },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Rounded.RestartAlt,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                        )
+                    },
+                    onClick = {
+                        menuOpen = false
+                        onReset()
                     },
                 )
                 DropdownMenuItem(
@@ -551,6 +601,15 @@ fun EffectSection(
                         state.toggleEffect(layer.id, effect.id)
                         haptic.hapticToggle(!effect.enabled)
                     },
+                    onReset = {
+                        state.resetEffectParams(layer.id, effect.id)
+                        haptic.hapticConfirm()
+                    },
+                    onDuplicate = {
+                        val dupId = state.duplicateEffect(layer.id, effect.id)
+                        if (dupId != null) onSelect(dupId)
+                        haptic.hapticConfirm()
+                    },
                     onDelete = {
                         state.removeEffect(layer.id, effect.id)
                         haptic.hapticLongPress()
@@ -652,6 +711,7 @@ fun AddEffectSheet(
     val installed by state.installedEffectsFlow.collectAsState()
 
     var query by remember { mutableStateOf("") }
+    var category by remember { mutableStateOf("all") }
     val previews = remember(state) { EffectPreviewLoader(state, scope) }
 
     // The layer for the preview is the selected one if it is visible, otherwise
@@ -677,16 +737,19 @@ fun AddEffectSheet(
     // The names the rows actually show, resolved before the filter: `stringResource`
     // is a composable read and cannot run inside `remember`.
     val displayNames = catalogue.map { it.id to effectDisplayName(it.id, it.label) }.toMap()
-    val shown = remember(catalogue, displayNames, query) {
+    val shown = remember(catalogue, displayNames, query, category) {
         val q = query.trim().lowercase()
+        val byCat = when (category) {
+            "blur" -> catalogue.filter { it.id in setOf("blur", "glow", "drop_shadow", "inner_shadow") }
+            "color" -> catalogue.filter { it.id in setOf("color_tune", "threshold", "chroma_key", "copy_background") }
+            "stylize" -> catalogue.filter { it.id in setOf("pixelate", "sphere360") }
+            "custom" -> catalogue.filter { it.custom || it.id in installedIds || it.id in projectIds }
+            else -> catalogue
+        }
         if (q.isEmpty()) {
-            catalogue
+            byCat
         } else {
-            // Matches the name the user can see, plus the id, which the row prints
-            // under it. The engine's English label is deliberately not searched: on
-            // a Russian or Chinese screen it is a word nobody can read, and keeping
-            // it would only help a user who typed a name that is not displayed.
-            catalogue.filter {
+            byCat.filter {
                 displayNames[it.id].orEmpty().lowercase().contains(q) ||
                     it.id.lowercase().contains(q)
             }
@@ -750,6 +813,28 @@ fun AddEffectSheet(
                 leadingIcon = { Icon(Icons.Rounded.Search, contentDescription = null) },
                 placeholder = { Text(stringResource(R.string.panel_effects_search)) },
             )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
+                    .padding(horizontal = RumoSpacing.l),
+                horizontalArrangement = Arrangement.spacedBy(RumoSpacing.xs),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                listOf(
+                    "all" to R.string.panel_effects_cat_all,
+                    "blur" to R.string.panel_effects_cat_blur,
+                    "color" to R.string.panel_effects_cat_color,
+                    "stylize" to R.string.panel_effects_cat_stylize,
+                    "custom" to R.string.panel_effects_cat_custom,
+                ).forEach { (catId, labelRes) ->
+                    FilterChip(
+                        selected = category == catId,
+                        onClick = { category = catId },
+                        label = { Text(stringResource(labelRes), style = MaterialTheme.typography.labelSmall) },
+                    )
+                }
+            }
 
             if (catalogue.isEmpty()) {
                 Text(
