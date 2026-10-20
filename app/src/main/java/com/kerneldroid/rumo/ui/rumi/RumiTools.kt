@@ -326,6 +326,29 @@ class RumiTools(
         )
         add(
             RumiToolSpec(
+                name = "nle_edit",
+                description = "Perform non-linear editing operations on a layer: split at timeMs, " +
+                    "duplicate, trim_start, trim_end, center (horizontal/vertical alignment on canvas), " +
+                    "reset_transform, time_stretch (scales duration and keyframe times by factor), " +
+                    "or reverse_keys (reverses keyframe timing).",
+                schemaJson = obj(
+                    req(
+                        "action",
+                        oneOf(
+                            "NLE operation to perform.",
+                            "split", "duplicate", "trim_start", "trim_end",
+                            "center", "center_x", "center_y", "reset_transform",
+                            "time_stretch", "reverse_keys",
+                        ),
+                    ),
+                    req("layerId", str("Layer id from project_state.")),
+                    opt("timeMs", num("Cut or trim timestamp in milliseconds (defaults to playhead for split).")),
+                    opt("factor", num("Stretch factor for time_stretch (0.1 to 10.0; 0.5 = 2x faster, 2.0 = 2x slower).", 0.1, 10.0)),
+                ).toString(),
+            ),
+        )
+        add(
+            RumiToolSpec(
                 name = "set_transition",
                 description = "Cross-fade a layer in against the visible layer below it: the layer " +
                     "below fades out while this one fades in, over one window. Set remove to " +
@@ -360,8 +383,8 @@ class RumiTools(
                     req(
                         "action",
                         oneOf(
-                            "list, add, set (write one parameter), remove, toggle, move (change order).",
-                            "list", "add", "set", "remove", "toggle", "move",
+                            "list, add, set (write one parameter), remove, toggle, move (change order), reset (restore defaults), duplicate.",
+                            "list", "add", "set", "remove", "toggle", "move", "reset", "duplicate",
                         ),
                     ),
                     opt("layerId", str("Layer id, required for everything except list.")),
@@ -1085,6 +1108,7 @@ class RumiTools(
                 "keys" -> keys(args)
                 "update_layer" -> updateLayer(args)
                 "remove_layer" -> removeLayer(args)
+                "nle_edit" -> nleEdit(args)
                 "set_transition" -> setTransition(args)
                 "effects" -> effects(args)
                 "compare_effects" -> compareEffects(args)
@@ -2132,7 +2156,111 @@ class RumiTools(
                 val order = layerEffects(layerId).joinToString(" -> ") { it.kindId }
                 return RumiToolOutcome("chain order: $order", summary = "moved")
             }
-            else -> return fail("action must be list, add, set, remove, toggle or move")
+            "reset" -> {
+                val layerId = args.optText("layerId").orEmpty()
+                val effectId = args.optText("effectId").orEmpty()
+                val effect = layerEffects(layerId).firstOrNull { it.id == effectId }
+                    ?: return fail("no effect `$effectId` on layer `$layerId`")
+                state.resetEffectParams(layerId, effectId)
+                return RumiToolOutcome("reset `${effect.kindId}` ($effectId) to default parameters", summary = "reset")
+            }
+            "duplicate" -> {
+                val layerId = args.optText("layerId").orEmpty()
+                val effectId = args.optText("effectId").orEmpty()
+                val effect = layerEffects(layerId).firstOrNull { it.id == effectId }
+                    ?: return fail("no effect `$effectId` on layer `$layerId`")
+                val dupId = state.duplicateEffect(layerId, effectId)
+                    ?: return fail("could not duplicate effect `$effectId`")
+                return RumiToolOutcome(
+                    JSONObject().put("ok", true).put("effectId", dupId).put("kind", effect.kindId).toString(),
+                    summary = "duplicated ${effect.kindId}",
+                )
+            }
+            else -> return fail("action must be list, add, set, remove, toggle, move, reset or duplicate")
+        }
+    }
+
+    private fun nleEdit(args: JSONObject): RumiToolOutcome {
+        if (!mayMutate) return fail("this role cannot modify the project")
+        val action = args.optText("action").orEmpty()
+        val id = args.optText("layerId").orEmpty()
+        val layer = state.layers.value.firstOrNull { it.id == id }
+            ?: return fail("no layer with id `$id`")
+        if (id in state.locked.value) return fail("layer $id is locked")
+        return when (action) {
+            "split" -> {
+                val atMs = args.optDouble("timeMs", state.playheadMs.value.toDouble()).toLong()
+                val newId = state.splitLayer(id, atMs)
+                    ?: return fail("cannot split layer `$id` at ${atMs}ms (must be inside clip bounds)")
+                RumiToolOutcome(
+                    JSONObject().put("ok", true).put("leftLayerId", id).put("rightLayerId", newId).put("splitAtMs", atMs).toString(),
+                    summary = "split $id -> $newId at ${atMs}ms",
+                )
+            }
+            "duplicate" -> {
+                val newId = state.duplicateLayer(id)
+                    ?: return fail("cannot duplicate layer `$id`")
+                RumiToolOutcome(
+                    JSONObject().put("ok", true).put("sourceLayerId", id).put("newLayerId", newId).toString(),
+                    summary = "duplicated $id -> $newId",
+                )
+            }
+            "trim_start" -> {
+                val t = args.optDouble("timeMs", Double.NaN)
+                if (t.isNaN()) return fail("timeMs is required for trim_start")
+                state.trimLayerStart(id, t.toLong())
+                state.endGesture()
+                val updated = state.layers.value.firstOrNull { it.id == id }
+                RumiToolOutcome(
+                    JSONObject().put("ok", true).put("layerId", id).put("startMs", updated?.startMs).put("durationMs", updated?.durationMs).toString(),
+                    summary = "trimmed start to ${updated?.startMs}ms",
+                )
+            }
+            "trim_end" -> {
+                val t = args.optDouble("timeMs", Double.NaN)
+                if (t.isNaN()) return fail("timeMs is required for trim_end")
+                state.trimLayerEnd(id, t.toLong())
+                state.endGesture()
+                val updated = state.layers.value.firstOrNull { it.id == id }
+                RumiToolOutcome(
+                    JSONObject().put("ok", true).put("layerId", id).put("startMs", updated?.startMs).put("durationMs", updated?.durationMs).toString(),
+                    summary = "trimmed duration to ${updated?.durationMs}ms",
+                )
+            }
+            "center" -> {
+                state.centerLayer(id, horizontal = true, vertical = true)
+                RumiToolOutcome("centered layer $id on canvas", summary = "centered")
+            }
+            "center_x" -> {
+                state.centerLayer(id, horizontal = true, vertical = false)
+                RumiToolOutcome("centered layer $id horizontally", summary = "centered X")
+            }
+            "center_y" -> {
+                state.centerLayer(id, horizontal = false, vertical = true)
+                RumiToolOutcome("centered layer $id vertically", summary = "centered Y")
+            }
+            "reset_transform" -> {
+                state.resetLayerTransform(id)
+                RumiToolOutcome("reset transform and keyframes of layer $id", summary = "reset transform")
+            }
+            "time_stretch" -> {
+                val factor = args.optDouble("factor", 1.0).toFloat()
+                if (!state.stretchLayerDuration(id, factor)) {
+                    return fail("could not time-stretch layer `$id`")
+                }
+                val updated = state.layers.value.firstOrNull { it.id == id }
+                RumiToolOutcome(
+                    JSONObject().put("ok", true).put("layerId", id).put("durationMs", updated?.durationMs).toString(),
+                    summary = "stretched $id (${updated?.durationMs}ms)",
+                )
+            }
+            "reverse_keys" -> {
+                if (!state.reverseLayerKeyframes(id)) {
+                    return fail("could not reverse keyframes on layer `$id`")
+                }
+                RumiToolOutcome("reversed keyframes on layer $id", summary = "reversed keys")
+            }
+            else -> fail("unknown nle_edit action `$action`")
         }
     }
 

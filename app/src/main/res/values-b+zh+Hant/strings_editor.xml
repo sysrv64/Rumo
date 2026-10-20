@@ -513,4 +513,27 @@
     <string name="panel_layers_split">在播放頭處分割</string>
     <string name="panel_layers_move_up">上移</string>
     <string name="panel_layers_move_down">下移</string>
+
+    <!-- ===================== Wave 2 Effects, Nodes & NLE ===================== -->
+    <string name="editor_add_tab_shapes">形狀</string>
+    <string name="editor_add_tab_text">文字</string>
+    <string name="editor_add_tab_media">媒體</string>
+    <string name="editor_add_preset_title">主標題</string>
+    <string name="editor_add_preset_subtitle">副標題</string>
+    <string name="editor_add_preset_caption">字幕</string>
+    <string name="editor_add_preset_badge">角標</string>
+    <string name="editor_add_photo">照片</string>
+    <string name="editor_add_video">影片</string>
+    <string name="editor_add_audio">音訊</string>
+    <string name="panel_effects_duplicate">複製效果</string>
+    <string name="panel_effects_reset">重設參數</string>
+    <string name="panel_effects_cat_all">全部</string>
+    <string name="panel_effects_cat_blur">模糊與發光</string>
+    <string name="panel_effects_cat_color">調色與去背</string>
+    <string name="panel_effects_cat_stylize">風格化</string>
+    <string name="panel_effects_cat_custom">自訂</string>
+    <string name="panel_inspector_stretch_half">0.5× 加速</string>
+    <string name="panel_inspector_stretch_double">2.0× 慢放</string>
+    <string name="panel_inspector_reverse_keys">反轉關鍵影格</string>
+    <string name="panel_nodes_fit">適配視圖</string>
 </resources>

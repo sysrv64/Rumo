@@ -544,4 +544,27 @@
     <string name="panel_layers_split">Split at playhead</string>
     <string name="panel_layers_move_up">Move up</string>
     <string name="panel_layers_move_down">Move down</string>
+
+    <!-- ===================== Wave 2 Effects, Nodes & NLE ===================== -->
+    <string name="editor_add_tab_shapes">Shapes</string>
+    <string name="editor_add_tab_text">Text</string>
+    <string name="editor_add_tab_media">Media</string>
+    <string name="editor_add_preset_title">Title</string>
+    <string name="editor_add_preset_subtitle">Subtitle</string>
+    <string name="editor_add_preset_caption">Caption</string>
+    <string name="editor_add_preset_badge">Badge</string>
+    <string name="editor_add_photo">Photo</string>
+    <string name="editor_add_video">Video</string>
+    <string name="editor_add_audio">Audio</string>
+    <string name="panel_effects_duplicate">Duplicate effect</string>
+    <string name="panel_effects_reset">Reset parameters</string>
+    <string name="panel_effects_cat_all">All</string>
+    <string name="panel_effects_cat_blur">Blur &amp; Glow</string>
+    <string name="panel_effects_cat_color">Colour &amp; Key</string>
+    <string name="panel_effects_cat_stylize">Stylize</string>
+    <string name="panel_effects_cat_custom">Custom</string>
+    <string name="panel_inspector_stretch_half">0.5× Fast</string>
+    <string name="panel_inspector_stretch_double">2.0× Slow</string>
+    <string name="panel_inspector_reverse_keys">Reverse keys</string>
+    <string name="panel_nodes_fit">Fit view</string>
 </resources>

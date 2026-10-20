@@ -3811,6 +3811,87 @@ class EditorState {
         return newId
     }
 
+    /**
+     * Time-stretch layer [id] by [factor] (e.g. 0.5f for 2x speed, 2.0f for half speed),
+     * scaling `durationMs`, incoming transition duration, and all keyframe timestamps
+     * relative to `layer.startMs`.
+     */
+    fun stretchLayerDuration(id: String, factor: Float): Boolean {
+        if (id in _locked.value || !factor.isFinite() || factor <= 0f) return false
+        val layer = _layers.value.firstOrNull { it.id == id } ?: return false
+        if (isBackground(layer)) return false
+        val clampedFactor = factor.coerceIn(0.1f, 10f)
+        val newDuration = (layer.durationMs.toFloat() * clampedFactor).toLong()
+            .coerceIn(MIN_LAYER_DURATION_MS, MAX_LAYER_DURATION_MS)
+        val actualRatio = newDuration.toFloat() / layer.durationMs.coerceAtLeast(1L).toFloat()
+
+        fun scaleTrack(keys: List<KeyframeUi>): List<KeyframeUi> {
+            if (keys.isEmpty()) return emptyList()
+            return keys.map { k ->
+                val rel = k.timeMs - layer.startMs
+                val scaledT = (layer.startMs + (rel.toFloat() * actualRatio).toLong()).coerceAtLeast(0L)
+                k.copy(timeMs = scaledT)
+            }.sortedBy { it.timeMs }.distinctBy { it.timeMs }
+        }
+
+        pushUndo()
+        _layers.update { list ->
+            list.map { l ->
+                if (l.id != id) l else l.copy(
+                    durationMs = newDuration,
+                    keys = scaleTrack(l.keys).ifEmpty { listOf(KeyframeUi(0L, 0f)) },
+                    xKeys = scaleTrack(l.xKeys),
+                    yKeys = scaleTrack(l.yKeys),
+                    scaleKeys = scaleTrack(l.scaleKeys),
+                    alphaKeys = scaleTrack(l.alphaKeys),
+                    transition = l.transition?.let { tr ->
+                        tr.copy(
+                            durationMs = (tr.durationMs.toFloat() * actualRatio).toLong()
+                                .coerceIn(TransitionUi.MIN_DURATION_MS, TransitionUi.MAX_DURATION_MS),
+                        )
+                    },
+                )
+            }
+        }
+        _hasEdits.value = true
+        return true
+    }
+
+    /**
+     * Reverse all keyframe timestamps on layer [id] across its `[startMs, startMs + durationMs]`
+     * window so animations play in reverse.
+     */
+    fun reverseLayerKeyframes(id: String): Boolean {
+        if (id in _locked.value) return false
+        val layer = _layers.value.firstOrNull { it.id == id } ?: return false
+        if (isBackground(layer)) return false
+        val start = layer.startMs
+        val end = layer.startMs + layer.durationMs
+
+        fun reverseTrack(keys: List<KeyframeUi>): List<KeyframeUi> {
+            if (keys.size <= 1) return keys
+            return keys.map { k ->
+                val mirrored = (end - (k.timeMs - start)).coerceIn(0L, maxOf(end, k.timeMs))
+                k.copy(timeMs = mirrored)
+            }.sortedBy { it.timeMs }.distinctBy { it.timeMs }
+        }
+
+        pushUndo()
+        _layers.update { list ->
+            list.map { l ->
+                if (l.id != id) l else l.copy(
+                    keys = reverseTrack(l.keys),
+                    xKeys = reverseTrack(l.xKeys),
+                    yKeys = reverseTrack(l.yKeys),
+                    scaleKeys = reverseTrack(l.scaleKeys),
+                    alphaKeys = reverseTrack(l.alphaKeys),
+                )
+            }
+        }
+        _hasEdits.value = true
+        return true
+    }
+
     // --- The layer's effect chain -------------------------------------------------
     // Edits go through the same copy-on-write as the other mutators:
     // `_layers.update` is the only trigger for the preview redraw (init:
@@ -4006,6 +4087,37 @@ class EditorState {
         updateEffects(layerId) { chain ->
             chain.map { if (it.id == effectId) it.copy(enabled = !it.enabled) else it }
         }
+    }
+
+    /** Reset all parameters of [effectId] on [layerId] to their catalogue defaults. */
+    fun resetEffectParams(layerId: String, effectId: String): Boolean {
+        val customs = customsJson()
+        return updateEffects(layerId) { chain ->
+            chain.map { effect ->
+                if (effect.id != effectId) {
+                    effect
+                } else {
+                    val defaults = RumoBridge.defaultEffectParams(effect.kindId, customs)
+                    if (defaults != null) effect.copy(params = defaults) else effect
+                }
+            }
+        }
+    }
+
+    /** Duplicate [effectId] on [layerId] immediately after the original instance. */
+    fun duplicateEffect(layerId: String, effectId: String): String? {
+        var newId: String? = null
+        val ok = updateEffects(layerId) { chain ->
+            val idx = chain.indexOfFirst { it.id == effectId }
+            if (idx < 0) {
+                chain
+            } else {
+                val copy = chain[idx].copy(id = java.util.UUID.randomUUID().toString())
+                newId = copy.id
+                chain.toMutableList().apply { add(idx + 1, copy) }
+            }
+        }
+        return if (ok) newId else null
     }
 
     /**

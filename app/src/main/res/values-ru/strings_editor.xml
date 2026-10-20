@@ -543,4 +543,27 @@
     <string name="panel_layers_split">Разделить по курсору</string>
     <string name="panel_layers_move_up">Выше</string>
     <string name="panel_layers_move_down">Ниже</string>
+
+    <!-- ===================== Wave 2 Effects, Nodes & NLE ===================== -->
+    <string name="editor_add_tab_shapes">Фигуры</string>
+    <string name="editor_add_tab_text">Текст</string>
+    <string name="editor_add_tab_media">Медиа</string>
+    <string name="editor_add_preset_title">Заголовок</string>
+    <string name="editor_add_preset_subtitle">Подзаголовок</string>
+    <string name="editor_add_preset_caption">Титр</string>
+    <string name="editor_add_preset_badge">Плашка</string>
+    <string name="editor_add_photo">Фото</string>
+    <string name="editor_add_video">Видео</string>
+    <string name="editor_add_audio">Аудио</string>
+    <string name="panel_effects_duplicate">Дублировать эффект</string>
+    <string name="panel_effects_reset">Сбросить параметры</string>
+    <string name="panel_effects_cat_all">Все</string>
+    <string name="panel_effects_cat_blur">Размытие и свечение</string>
+    <string name="panel_effects_cat_color">Цвет и кеинг</string>
+    <string name="panel_effects_cat_stylize">Стилизация</string>
+    <string name="panel_effects_cat_custom">Свои</string>
+    <string name="panel_inspector_stretch_half">0.5× Быстрее</string>
+    <string name="panel_inspector_stretch_double">2.0× Медленнее</string>
+    <string name="panel_inspector_reverse_keys">Обратить ключи</string>
+    <string name="panel_nodes_fit">Вписать</string>
 </resources>
