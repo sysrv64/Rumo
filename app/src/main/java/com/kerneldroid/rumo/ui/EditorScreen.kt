@@ -789,7 +789,7 @@ fun EditorScreen(
                                     },
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(vertical = RumoSpacing.xxs),
+                                        .padding(vertical = RumoSpacing.xs),
                                 )
                             }
                             EditorDock(
@@ -904,7 +904,7 @@ fun EditorScreen(
                                         selectionFromLayerList = false
                                         state.selectLayer(it)
                                     },
-                                    modifier = Modifier.padding(vertical = RumoSpacing.xxs),
+                                    modifier = Modifier.padding(vertical = RumoSpacing.xs),
                                 )
                             }
                             EditorDock(
@@ -1070,10 +1070,10 @@ private fun EditorTopBar(
             .background(MaterialTheme.colorScheme.surface)
             .windowInsetsPadding(TopAppBarDefaults.windowInsets)
             .padding(
-                start = RumoSpacing.xxs,
-                end = RumoSpacing.xxs,
-                top = RumoSpacing.xxs,
-                bottom = RumoSpacing.xxs,
+                start = RumoSpacing.xs,
+                end = RumoSpacing.xs,
+                top = RumoSpacing.xs,
+                bottom = RumoSpacing.xs,
             ),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -2077,7 +2077,7 @@ private fun TransportBar(
         Box(
             modifier = Modifier
                 .weight(1f)
-                .padding(end = RumoSpacing.xxs),
+                .padding(end = RumoSpacing.xs),
             contentAlignment = Alignment.CenterEnd,
         ) {
             Row(

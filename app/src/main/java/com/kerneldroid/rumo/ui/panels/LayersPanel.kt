@@ -425,7 +425,7 @@ private fun LayerRow(
                     imageVector = if (locked) Icons.Rounded.Lock else Icons.Rounded.LockOpen,
                     contentDescription = stringResource(if (locked) R.string.panel_unlock else R.string.panel_lock),
                     tint = if (locked) {
-                        MaterialTheme.editor.warning
+                        MaterialTheme.editor.danger
                     } else {
                         MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f)
                     },

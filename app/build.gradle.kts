@@ -207,7 +207,8 @@ tasks.register<Exec>("cargoBuild") {
         "sh",
         "-c",
         """
-        export CARGO_TARGET_AARCH64_LINUX_ANDROID_RUSTFLAGS="-L ${'$'}ANDROID_SDK_ROOT/ndk/29.0.14206865/toolchains/llvm/prebuilt/linux-x86_64/lib/clang/21/lib/linux/aarch64 -L ${'$'}ANDROID_SDK_ROOT/ndk/30.0.14904198/toolchains/llvm/prebuilt/linux-x86_64/lib/clang/21/lib/linux/aarch64"
+        NDK_LIBS="${'$'}(ls -d "${'$'}ANDROID_SDK_ROOT"/ndk/* 2>/dev/null | sort -V | tail -n 1)"
+        export CARGO_TARGET_AARCH64_LINUX_ANDROID_RUSTFLAGS="-L ${'$'}NDK_LIBS/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/26 -L ${'$'}NDK_LIBS/toolchains/llvm/prebuilt/linux-x86_64/lib/clang/21/lib/linux/aarch64"
         cargo ndk -t arm64-v8a -o ../app/src/main/jniLibs build --lib || {
           NDK_VER="$(ls -d "${'$'}ANDROID_SDK_ROOT"/ndk/* 2>/dev/null | sort -V | tail -n 1)"
           SYSROOT="${'$'}NDK_VER/toolchains/llvm/prebuilt/linux-x86_64/sysroot"
@@ -242,7 +243,8 @@ tasks.register<Exec>("cargoBuildRelease") {
         "sh",
         "-c",
         """
-        export CARGO_TARGET_AARCH64_LINUX_ANDROID_RUSTFLAGS="-L ${'$'}ANDROID_SDK_ROOT/ndk/29.0.14206865/toolchains/llvm/prebuilt/linux-x86_64/lib/clang/21/lib/linux/aarch64 -L ${'$'}ANDROID_SDK_ROOT/ndk/30.0.14904198/toolchains/llvm/prebuilt/linux-x86_64/lib/clang/21/lib/linux/aarch64"
+        NDK_LIBS="${'$'}(ls -d "${'$'}ANDROID_SDK_ROOT"/ndk/* 2>/dev/null | sort -V | tail -n 1)"
+        export CARGO_TARGET_AARCH64_LINUX_ANDROID_RUSTFLAGS="-L ${'$'}NDK_LIBS/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/26 -L ${'$'}NDK_LIBS/toolchains/llvm/prebuilt/linux-x86_64/lib/clang/21/lib/linux/aarch64"
         if cargo ndk -t arm64-v8a -o ../app/src/main/jniLibs build --lib --release; then
           echo 'cargoBuildRelease: cargo-ndk release OK'
         else
