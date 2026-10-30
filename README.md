@@ -156,4 +156,11 @@ The full texts are in [`LICENSE`](LICENSE) and
 [`rumo-rs/LICENSE-APACHE`](rumo-rs/LICENSE-APACHE); [`NOTICE`](NOTICE) says
 which is which.
 
+## Maintenance
+
+A personal project: I work on it rarely, and I may stop altogether. There is no
+roadmap and no promise that an issue gets fixed or a pull request gets answered.
+Forks and patches are welcome — if you need it to go somewhere I am not going,
+take it there.
+
 Copyright (C) 2026 Kerneldroid.
