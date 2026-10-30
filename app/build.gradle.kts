@@ -92,8 +92,8 @@ android {
         // (`release.yml`), so a published `versionCode` increases by itself — the one
         // thing an app store will not accept twice. A debug or local build keeps the
         // literals, because neither variable is set for it.
-        versionCode = System.getenv("RUMO_VERSION_CODE")?.toIntOrNull()?.takeIf { it > 0 } ?: 1
-        versionName = System.getenv("RUMO_VERSION_NAME")?.removePrefix("v")?.takeIf { it.isNotBlank() } ?: "0.1"
+        versionCode = System.getenv("RUMO_VERSION_CODE")?.toIntOrNull()?.takeIf { it > 0 } ?: 2
+        versionName = System.getenv("RUMO_VERSION_NAME")?.removePrefix("v")?.takeIf { it.isNotBlank() } ?: "0.2"
         // The engine is built for arm64-v8a and shipped as this app's own library, so
         // arm64-v8a is the only ABI the app can honestly claim. Left alone, AGP
         // packages every ABI the dependencies carry — `libandroidx.graphics.path.so`
